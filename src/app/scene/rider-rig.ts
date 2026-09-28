@@ -26,9 +26,9 @@ const FIELDS = ['scale', 'head', 'torso', 'shoulders', 'hips', 'chest', 'upperAr
 
 /** Crawl (a baby), walk (six), run (fourteen), bike (seventeen): each stage's proportions, head large when small. */
 const BODIES: Body[] = [
-  { scale: 1.7, head: 0.17, torso: 0.24, shoulders: 0.17, hips: 0.13, chest: 0.12, upperArm: 0.08, foreArm: 0.09, thigh: 0.13, shin: 0.12, foot: 0.08, limb: 0.065 },
-  { scale: 1.3, head: 0.2, torso: 0.34, shoulders: 0.24, hips: 0.17, chest: 0.14, upperArm: 0.18, foreArm: 0.21, thigh: 0.27, shin: 0.26, foot: 0.15, limb: 0.08 },
-  { scale: 1.08, head: 0.21, torso: 0.48, shoulders: 0.34, hips: 0.22, chest: 0.17, upperArm: 0.27, foreArm: 0.32, thigh: 0.4, shin: 0.39, foot: 0.23, limb: 0.09 },
+  { scale: 2.6, head: 0.17, torso: 0.24, shoulders: 0.17, hips: 0.13, chest: 0.12, upperArm: 0.08, foreArm: 0.09, thigh: 0.13, shin: 0.12, foot: 0.08, limb: 0.065 },
+  { scale: 1.52, head: 0.2, torso: 0.34, shoulders: 0.24, hips: 0.17, chest: 0.14, upperArm: 0.18, foreArm: 0.21, thigh: 0.27, shin: 0.26, foot: 0.15, limb: 0.08 },
+  { scale: 1.21, head: 0.21, torso: 0.48, shoulders: 0.34, hips: 0.22, chest: 0.17, upperArm: 0.27, foreArm: 0.32, thigh: 0.4, shin: 0.39, foot: 0.23, limb: 0.09 },
   { scale: 1, head: 0.22, torso: 0.54, shoulders: 0.4, hips: 0.25, chest: 0.2, upperArm: 0.3, foreArm: 0.36, thigh: 0.45, shin: 0.44, foot: 0.26, limb: 0.1 },
 ];
 
@@ -42,8 +42,10 @@ const BAR = [0.38, 1.03] as const;
 const CRANK = 0.17;
 /** Wheel turns per pedal turn. */
 const GEAR = 2.2;
-/** Where the Golf's driver sits (rig space, left of centre), where he waits for it. */
-const SEAT = [-0.25, 0.5, -0.4] as const;
+/** Where he waits for the Golf (rig space): at its driver's door, clear of where it pulls up. */
+const DOOR = [-0.1, 0, -1.4] as const;
+/** How far in (z) he has gone when he is out of sight inside it. */
+const INSIDE = -0.45;
 
 const COLOURS = {
   skin: '#e8b890',
@@ -96,7 +98,7 @@ interface Limb {
 
 /**
  * The person on the road before the first car (#46): a baby crawling, a child walking, a teen running, a young man
- * on a bicycle, then off it to wait where the Golf 2 arrives. One skinned mesh (one draw call): every body part is
+ * on a bicycle, then off it to wait at the Golf 2's door as it pulls up, and in. One skinned mesh (one draw call): every body part is
  * rigid on its own bone, posed from scroll alone; `time` only breathes and turns the head.
  */
 export class RiderRig {
@@ -209,10 +211,10 @@ export class RiderRig {
 
   /**
    * Places him at `position` facing along `direction`, as he is at journey `progress`: `state` says how grown and how
-   * far off the bike. Hidden once a car carries the camera. Allocates nothing.
+   * far off the bike and into the car. Hidden once he is in it. Allocates nothing.
    */
   update(state: RiderState, progress: number, position: THREE.Vector3, direction: THREE.Vector3, time: number): void {
-    this.object.visible = state.riderId !== null;
+    this.object.visible = state.boarding < 1;
     if (!this.object.visible) return;
     this.object.position.copy(position);
     this.object.rotation.y = Math.atan2(-direction.z, direction.x);
@@ -223,17 +225,18 @@ export class RiderRig {
     const b = this.body;
     for (let i = 0; i < FIELDS.length; i++) b[FIELDS[i]] = lerp(BODIES[stage][FIELDS[i]], BODIES[stage + 1][FIELDS[i]], k);
     const phase = progress * STRIDES * Math.PI * 2;
-    const off = smoothstep(0, 0.45, state.handover);
-    const sit = smoothstep(0.55, 1, state.handover);
+    const off = smoothstep(0, 0.6, state.handover);
+    const inside = smoothstep(0, 0.7, state.boarding);
 
-    // Off the bike he steps to its left, where the Golf's driver will sit.
-    this.root.position.set(0, 0, SEAT[2] * off);
-    this.root.scale.setScalar(b.scale);
+    // Off the bike he walks round to the driver's door and stands there while the Golf pulls up beside him; then he
+    // steps in through the door, and sinks into the seat as he goes.
+    this.root.position.set(DOOR[0] * off, 0, lerp(DOOR[2] * off, INSIDE, inside));
+    this.root.scale.setScalar(Math.max(b.scale * (1 - smoothstep(0.35, 1, state.boarding)), 0.001));
     this.posed(stage, phase, this.from);
     this.posed(stage + 1, phase, this.to);
     const pose = this.pose.mix(this.from, this.to, k);
-    if (off > 0) pose.mix(pose, walk(b, phase, 0, this.to), off);
-    if (sit > 0) pose.mix(pose, this.seated(b, this.to), sit);
+    const stepping = Math.max(Math.sin(Math.PI * off), Math.sin(Math.PI * inside));
+    if (off > 0) pose.mix(pose, walk(b, phase, stepping, this.to), off);
     this.apply(pose, time);
 
     // The bike grows in under him as he takes to it, and lies down and goes once he is off it.
@@ -271,21 +274,6 @@ export class RiderRig {
       reach(out.x, out.y, px, py, b.thigh, b.shin, 1, out.thigh, out.shin, i);
       out.ankle[i] = -out.shin[i];
       reach(sx, sy, (BAR[0] - z.x) / s, BAR[1] / s, b.upperArm, b.foreArm, -1, out.upper, out.fore, i);
-    }
-    return out;
-  }
-
-  /** Settling low into where the Golf's driver sits, feet on the ground and hands out to a wheel not there yet. */
-  private seated(b: Body, out: Pose): Pose {
-    out.x = (SEAT[0] - this.root.position.x) / b.scale;
-    out.y = SEAT[1] / b.scale;
-    out.lean = -0.1;
-    out.head = 0;
-    for (let i = 0; i < 2; i++) {
-      reach(out.x, out.y, out.x + b.thigh * 0.8, b.limb * 0.8, b.thigh, b.shin, 1, out.thigh, out.shin, i);
-      out.ankle[i] = -out.shin[i];
-      out.upper[i] = 0.55;
-      out.fore[i] = 1.35;
     }
     return out;
   }
