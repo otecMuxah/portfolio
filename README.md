@@ -36,6 +36,11 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+**SSR rule.** `ng build` prerenders the page in Node (`outputMode: "static"`), so crawlers, link previews and screen readers get the text before any script runs. Every component therefore also runs on the server:
+
+- Touch browser globals (`window`, `document`, `location`, `matchMedia`, WebGL, `new Date()` for anything shown) only inside `afterNextRender` or behind `isPlatformBrowser`. Anything rendered from them on the server is baked into the HTML at build time (the hero age is set in `afterNextRender` for that reason).
+- Chapter builders (`src/app/scene/chapters`) must be synchronous. `SceneEngine.load()` builds the first chapter, drops the loader, then builds one chapter per frame.
+
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
@@ -63,3 +68,5 @@ For more information on using the Angular CLI, including detailed command refere
 Every push to `develop` runs the unit tests, builds with `--base-href /portfolio/` and deploys to GitHub Pages at https://otecmuxah.github.io/portfolio/ (`.github/workflows/deploy.yml`).
 
 **Custom domain later:** add the domain under repo Settings → Pages → Custom domain (GitHub commits a `CNAME` file), point a DNS `CNAME` record at `otecmuxah.github.io`, and change the workflow's `--base-href /portfolio/` to `--base-href /`.
+
+**Link-preview image:** `public/og-image.png` is a 1200×630 still of the hero scene. After changing the hero or its scene, regenerate it with `npm run og-image` (starts the dev server, captures, writes the file) and commit it. The canonical, Open Graph and Twitter tags in `src/index.html` use absolute `https://otecmuxah.github.io/portfolio/` URLs; change them too when a custom domain is added.

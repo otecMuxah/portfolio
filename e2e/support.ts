@@ -10,8 +10,24 @@ export function collectErrors(page: Page): string[] {
   return errors;
 }
 
+/**
+ * Wait until the app has hydrated and the first chapter's scene is up. The prerendered HTML
+ * already carries the state readout, so without this a test can act before scroll and key
+ * handlers exist.
+ */
+export async function ready(page: Page): Promise<void> {
+  await expect(page.locator(root)).toHaveAttribute('data-scene', 'ready');
+}
+
+/** Open a page and wait until the journey responds to input. */
+export async function visit(page: Page, url: string): Promise<void> {
+  await page.goto(url);
+  await ready(page);
+}
+
 /** Scroll the journey to a progress between 0 and 1. */
 export async function scrollJourney(page: Page, progress: number): Promise<void> {
+  await ready(page);
   await page.evaluate((p) => {
     const max = document.documentElement.scrollHeight - innerHeight;
     window.scrollTo(0, max * p);
@@ -20,6 +36,7 @@ export async function scrollJourney(page: Page, progress: number): Promise<void>
 
 /** Scroll to the middle of a chapter's span, found by scanning the state readout. */
 export async function scrollToChapter(page: Page, chapterId: string): Promise<void> {
+  await ready(page);
   const range = await page.evaluate(async (id) => {
     const max = document.documentElement.scrollHeight - innerHeight;
     const rootEl = document.querySelector('app-root')!;
