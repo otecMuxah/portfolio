@@ -3,7 +3,7 @@ import { EN } from './life.en';
 export type Phase = 'build' | 'shatter' | 'rebuild' | 'garage';
 
 /** Which builder renders a chapter's 3D scene (see scene/chapters). */
-export type SceneKind = 'placeholder' | 'birth' | 'school' | 'lyceum' | 'university' | 'dreamweaver' | 'family';
+export type SceneKind = 'placeholder' | 'birth' | 'school' | 'lyceum' | 'university' | 'dreamweaver' | 'family' | 'rally';
 
 export type ChapterId =
   | 'birth'
@@ -12,6 +12,7 @@ export type ChapterId =
   | 'university'
   | 'dreamweaver'
   | 'family'
+  | 'rally'
   | 'first-code'
   | 'kharkiv-career'
   | 'krakow'
@@ -63,6 +64,7 @@ export const CHAPTERS: Chapter[] = [
   { id: 'university', year: 1998, yearEnd: 2004, phase: 'build', scene: 'university' },
   { id: 'dreamweaver', year: 2000, phase: 'build', scene: 'dreamweaver' },
   { id: 'family', year: 2006, yearEnd: 2010, phase: 'build', scene: 'family' },
+  { id: 'rally', year: 2008, yearEnd: 2013, phase: 'build', scene: 'rally' },
   { id: 'first-code', year: 2012, phase: 'build', scene: 'placeholder' },
   { id: 'kharkiv-career', year: 2015, yearEnd: 2021, phase: 'build', scene: 'placeholder' },
   { id: 'krakow', year: 2021, phase: 'build', scene: 'placeholder' },

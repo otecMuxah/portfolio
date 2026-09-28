@@ -8,6 +8,7 @@ const TITLES = [
   "Two master's degrees",
   'Websites in Dreamweaver',
   'Family',
+  'Amateur rally',
   'Self-taught, first job',
   'The Kharkiv career years',
   'Kraków: leading the front end',
@@ -26,7 +27,7 @@ test('screen readers get every chapter in order, once, while the 3D journey runs
   await page.goto('/');
   await expect(page.locator('canvas.scene')).toBeVisible();
   await expect(story(page).getByRole('listitem').getByRole('heading')).toHaveText(TITLES);
-  await expect(story(page).getByRole('listitem').nth(10)).toContainText('4 a.m. Explosions.');
+  await expect(story(page).getByRole('listitem').nth(11)).toContainText('4 a.m. Explosions.');
   await expect(page.getByRole('heading', { level: 2 })).toHaveCount(TITLES.length);
 });
 

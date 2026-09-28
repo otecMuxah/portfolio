@@ -5,6 +5,7 @@ import { dreamweaver } from './dreamweaver';
 import { family } from './family';
 import { lyceum } from './lyceum';
 import { placeholder } from './placeholder';
+import { rally } from './rally';
 import { school } from './school';
 import { university } from './university';
 
@@ -17,4 +18,5 @@ export const CHAPTER_BUILDERS: Record<SceneKind, ChapterBuilder> = {
   university,
   dreamweaver,
   family,
+  rally,
 };
