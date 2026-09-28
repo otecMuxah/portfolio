@@ -11,7 +11,7 @@ export interface JourneyState {
 }
 
 export interface RiderState {
-  /** The stage he is in, or null once a car carries the camera (and in the undated garage). */
+  /** The stage he is in, or null once a car carries the camera. */
   riderId: RiderId | null;
   /** Growth through the stages, continuous: 0 crawl, 1 walk, 2 run, 3 bike. Each change blends across its year. */
   growth: number;
