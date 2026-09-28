@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { ChapterSpan, spanAt } from '../journey/journey';
+import { ChapterScene } from './chapter-scene';
+import { CHAPTER_BUILDERS } from './chapters';
 
 const CHAPTER_GAP = 40;
 const CAMERA_OFFSET = new THREE.Vector3(0, 6, 18);
@@ -12,6 +14,8 @@ export class SceneEngine {
   private readonly camera = new THREE.PerspectiveCamera(55, 1, 0.1, 500);
   private readonly path: THREE.CatmullRomCurve3;
   private readonly resizeObserver: ResizeObserver;
+  private readonly chapterScenes: ChapterScene[];
+  private readonly clock = new THREE.Timer();
   private target = 0;
   private current = 0;
 
@@ -26,7 +30,12 @@ export class SceneEngine {
     this.scene.add(new THREE.HemisphereLight('#ffe8c7', '#1a1d26', 2));
 
     const anchors = spans.map((_, i) => new THREE.Vector3(Math.sin(i) * 12, 0, -i * CHAPTER_GAP));
-    spans.forEach((_, i) => this.scene.add(this.placeholder(anchors[i], i)));
+    this.chapterScenes = spans.map(({ chapter }, i) => {
+      const built = CHAPTER_BUILDERS[chapter.scene](chapter, i);
+      built.object.position.add(anchors[i]);
+      this.scene.add(built.object);
+      return built;
+    });
     this.path = new THREE.CatmullRomCurve3(anchors.map((a) => a.clone().add(CAMERA_OFFSET)));
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -44,25 +53,21 @@ export class SceneEngine {
     this.renderer.setAnimationLoop(null);
     this.resizeObserver.disconnect();
     this.scene.traverse((obj) => {
-      if (obj instanceof THREE.Mesh) {
+      if (obj instanceof THREE.Mesh || obj instanceof THREE.Points || obj instanceof THREE.Line) {
         obj.geometry.dispose();
-        (obj.material as THREE.Material).dispose();
+        [obj.material].flat().forEach((m: THREE.Material) => m.dispose());
       }
     });
     this.renderer.dispose();
   }
 
-  private placeholder(at: THREE.Vector3, i: number): THREE.Mesh {
-    const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(6, 6 + i * 3, 6),
-      new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(0.08 + i * 0.12, 0.6, 0.55) }),
-    );
-    mesh.position.copy(at).setY((6 + i * 3) / 2);
-    return mesh;
-  }
-
   private frame(): void {
     this.current += (this.target - this.current) * 0.08;
+    this.clock.update();
+    const time = this.clock.getElapsed();
+    this.spans.forEach(({ start, end }, i) =>
+      this.chapterScenes[i].update?.({ progress: this.current, local: (this.current - start) / (end - start), time }),
+    );
     // getPoint is uniform per segment, so t = i / (n - 1) lands exactly on anchor i.
     const t = this.pathT(this.current);
     this.camera.position.copy(this.path.getPoint(t));
