@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { RiderState } from '../journey/journey';
 import { smoothstep } from './art/kit';
+import { PAVEMENT } from './road';
 
 /** Gait cycles (strides, pedal turns) over the whole journey's scroll: about six a chapter. */
 const STRIDES = 110;
@@ -169,6 +170,8 @@ export class RiderRig {
         add(new THREE.BoxGeometry(2 * (WHEEL - 0.04), 0.014, 0.014).rotateZ(turn), wheel, COLOURS.metal);
       return wheel;
     });
+    // The bike stays on the pavement, where he gets off it.
+    this.bike.position.set(0, PAVEMENT.height, PAVEMENT.side);
     this.crank = this.bone(this.bike);
     this.crank.position.set(...CRANK_AT, 0);
     add(new THREE.CylinderGeometry(0.09, 0.09, 0.02, 10).rotateX(Math.PI / 2).translate(0, 0, 0.06), this.crank, COLOURS.metal);
@@ -228,9 +231,9 @@ export class RiderRig {
     const off = smoothstep(0, 0.6, state.handover);
     const inside = smoothstep(0, 0.7, state.boarding);
 
-    // Off the bike he walks round to the driver's door and stands there while the Golf pulls up beside him; then he
-    // steps in through the door, and sinks into the seat as he goes.
-    this.root.position.set(DOOR[0] * off, 0, lerp(DOOR[2] * off, INSIDE, inside));
+    // He keeps to the pavement (road.ts). Off the bike he steps down to the driver's door and stands there while the
+    // Golf pulls up beside him; then he steps in through the door, and sinks into the seat as he goes.
+    this.root.position.set(DOOR[0] * off, PAVEMENT.height * (1 - off), lerp(lerp(PAVEMENT.side, DOOR[2], off), INSIDE, inside));
     this.root.scale.setScalar(Math.max(b.scale * (1 - smoothstep(0.35, 1, state.boarding)), 0.001));
     this.posed(stage, phase, this.from);
     this.posed(stage + 1, phase, this.to);

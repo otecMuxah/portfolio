@@ -139,9 +139,9 @@ export const BENDS: [x: number, z: number][] = [
   [14, -24],
 ];
 
-const ROAD = 5.6;
-const DASH = 2;
-const DASH_EVERY = 5;
+export const ROAD = 5.6;
+export const DASH = 2;
+export const DASH_EVERY = 5;
 const REFLECTOR_EVERY = 9;
 /** Where a sign stands off the road's centre (left verge, m), how it turns toward the camera behind the car, its size. */
 const SIGN_OFF = ROAD / 2 + 1.3;
@@ -153,11 +153,9 @@ const SIGN_Y = 2.3;
 const HEAD = new THREE.Vector3(2.4, 0.73, 0.65);
 const TAIL = new THREE.Vector3(-2.4, 0.73, 0.65);
 
-/** Metres the road runs on past where the car arrives, on into the fog ahead of it. */
-const RUN_ON = 30;
-const ASPHALT = new THREE.Color('#25272d');
-const PAINT = new THREE.Color(PALETTE.chalk);
-const EDGE = new THREE.Color(PALETTE.gravel);
+export const ASPHALT = new THREE.Color('#25272d');
+export const PAINT = new THREE.Color(PALETTE.chalk);
+export const EDGE = new THREE.Color(PALETTE.gravel);
 const HEAD_GLOW = new THREE.Color(PALETTE.lastLight);
 const TAIL_GLOW = new THREE.Color(PALETTE.tailLight);
 const AMBER = new THREE.Color(PALETTE.candle);
@@ -258,17 +256,16 @@ export class EscapeRoute {
     this.length = this.curve.getLength();
     this.signs = SIGNS.map((s) => s * this.length);
 
+    // It ends where the car arrives: the town road (road.ts) runs on from there, the same asphalt, lines and dashes.
     const road = { position: [] as number[], color: [] as number[] };
-    const [last, end] = points.slice(-2);
-    const onward = new THREE.LineCurve3(end, end.clone().sub(last).setLength(RUN_ON).add(end));
-    for (const [curve, length] of [[this.curve, this.length], [onward, RUN_ON]] as const) {
-      const step = length / Math.ceil(length / 1.5);
-      for (let s = 0; s < length - 1e-6; s += step) {
-        strip(curve, length, s, s + step, -ROAD / 2, ROAD / 2, ASPHALT, 0.02, road);
-        for (const o of [-ROAD / 2 + 0.25, ROAD / 2 - 0.25]) strip(curve, length, s, s + step, o - 0.07, o + 0.07, EDGE, 0.03, road);
-      }
-      for (let s = DASH_EVERY; s < length - DASH; s += DASH_EVERY) strip(curve, length, s, s + DASH, -0.08, 0.08, PAINT, 0.03, road);
+    const curve = this.curve;
+    const length = this.length;
+    const step = length / Math.ceil(length / 1.5);
+    for (let s = 0; s < length - 1e-6; s += step) {
+      strip(curve, length, s, s + step, -ROAD / 2, ROAD / 2, ASPHALT, 0.02, road);
+      for (const o of [-ROAD / 2 + 0.25, ROAD / 2 - 0.25]) strip(curve, length, s, s + step, o - 0.07, o + 0.07, EDGE, 0.03, road);
     }
+    for (let s = DASH_EVERY; s < length - DASH; s += DASH_EVERY) strip(curve, length, s, s + DASH, -0.08, 0.08, PAINT, 0.03, road);
     const ribbon = new THREE.BufferGeometry();
     ribbon.setAttribute('position', new THREE.Float32BufferAttribute(road.position, 3));
     ribbon.setAttribute('color', new THREE.Float32BufferAttribute(road.color, 3));
