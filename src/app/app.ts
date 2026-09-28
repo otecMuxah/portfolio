@@ -9,7 +9,6 @@ import { Hero } from './hero/hero';
 import { JourneyState, chapterSpans, journeyAt } from './journey/journey';
 import { SceneEngine } from './scene/scene-engine';
 import { supportsWebGL } from './scene/webgl';
-import { Sound } from './sound/sound';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -49,7 +48,6 @@ export class App {
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private readonly track = viewChild.required<ElementRef<HTMLElement>>('track');
   private readonly nav = viewChild.required<ElementRef<HTMLElement>>('nav');
-  protected readonly sound = inject(Sound);
 
   /**
    * Without WebGL the story list is the page; with it, the list is there for screen readers only.
@@ -78,7 +76,6 @@ export class App {
     const destroyRef = inject(DestroyRef);
     const injector = inject(Injector);
     afterNextRender(() => {
-      this.sound.restore();
       const fallBack = () => {
         this.webgl.set(false);
         // The list items only get their ids now, so land on a deep-linked chapter by hand.
@@ -107,7 +104,6 @@ export class App {
         end: 'bottom bottom',
         onUpdate: ({ progress }) => {
           engine.setProgress(progress);
-          this.sound.setProgress(progress);
           const previous = this.state().chapterId;
           this.state.set(journeyAt(progress));
           const { chapterId } = this.state();
