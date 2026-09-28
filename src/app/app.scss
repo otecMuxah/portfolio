@@ -53,4 +53,90 @@
     margin: 0;
     line-height: 1.5;
   }
+
+  &__flag {
+    display: inline-block;
+    margin: 0 0 0.5rem;
+    padding: 0.15rem 0.5rem;
+    border: 1px dashed #ff6b5b;
+    border-radius: 4px;
+    color: #ff6b5b;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+
+.timeline {
+  position: fixed;
+  top: 50%;
+  right: clamp(0.5rem, 3vw, 2rem);
+  z-index: 1;
+  transform: translateY(-50%);
+  color: #f4efe6;
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    color: inherit;
+    font-size: 0.8rem;
+    text-decoration: none;
+    opacity: 0.55;
+    transition:
+      opacity 0.2s,
+      background-color 0.2s;
+
+    &:hover,
+    &:focus-visible {
+      opacity: 1;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #ffb35c;
+      outline-offset: 1px;
+    }
+
+    &[aria-current='step'] {
+      background: rgb(255 179 92 / 22%);
+      color: #ffb35c;
+      font-weight: 600;
+      opacity: 1;
+    }
+  }
+
+  &__year {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (max-width: 767px) {
+  .timeline {
+    top: 0;
+    right: 0;
+    left: 0;
+    transform: none;
+    overflow-x: auto;
+    background: rgb(13 15 20 / 72%);
+
+    &__list {
+      flex-direction: row;
+      width: max-content;
+    }
+
+    &__item {
+      white-space: nowrap;
+    }
+  }
 }
