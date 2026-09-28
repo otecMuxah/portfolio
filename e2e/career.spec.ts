@@ -22,7 +22,12 @@ const CAREER = [
     title: 'Kraków: leading the front end',
     company: 'Corporate Finance Institute',
   },
-  { id: 'back-home', shot: '04-back-home', title: 'Back to Kharkiv', company: null },
+  {
+    id: 'back-home',
+    shot: '04-back-home',
+    title: 'Back to Kharkiv',
+    company: 'Corporate Finance Institute',
+  },
 ];
 
 test('each career chapter shows its card and scene with no console errors', async ({ page }) => {
