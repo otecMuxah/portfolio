@@ -1,38 +1,58 @@
-<canvas #canvas class="scene" aria-hidden="true"></canvas>
+@if (webgl) {
+  <canvas #canvas class="scene" aria-hidden="true"></canvas>
+}
 
 <button type="button" class="skip-cv" (click)="cv.open()">Skip to CV</button>
 <app-cv-view #cv />
 
-<nav #nav class="timeline" aria-label="Timeline">
-  <ol class="timeline__list">
-    @for (item of timeline; track item.id) {
-      <li>
-        <a
-          class="timeline__item"
-          [href]="'#' + item.id"
-          [attr.aria-current]="item.id === state().chapterId ? 'step' : null"
-          (click)="onTimelineClick($event, item.id)"
-        >
-          @if (item.year) {
-            <span class="timeline__year">{{ item.year }}</span>
-          }
-          <span class="timeline__label">{{ item.label }}</span>
-        </a>
+@if (webgl) {
+  <nav #nav class="timeline" aria-label="Timeline">
+    <ol class="timeline__list">
+      @for (item of timeline; track item.id) {
+        <li>
+          <a
+            class="timeline__item"
+            [href]="'#' + item.id"
+            [attr.aria-current]="item.id === state().chapterId ? 'step' : null"
+            (click)="onTimelineClick($event, item.id)"
+          >
+            @if (item.year) {
+              <span class="timeline__year">{{ item.year }}</span>
+            }
+            <span class="timeline__label">{{ item.label }}</span>
+          </a>
+        </li>
+      }
+    </ol>
+  </nav>
+}
+
+<main #track class="track" [class.track--static]="!webgl" [style.height]="webgl ? trackHeight : null">
+  <app-hero />
+  <ol class="story" [class.story--sr-only]="webgl" aria-label="Life story">
+    @for (item of story; track item.id) {
+      <li class="story__item">
+        @if (item.placeholder) {
+          <p class="story__flag">Placeholder text: Mykhailo’s own words to come</p>
+        }
+        @if (item.meta) {
+          <p class="story__meta">{{ item.meta }}</p>
+        }
+        <h2 class="story__title">{{ item.title }}</h2>
+        <p class="story__body">{{ item.body }}</p>
       </li>
     }
   </ol>
-</nav>
-
-<main #track class="track" [style.height]="trackHeight">
-  <app-hero />
-  <article class="card" aria-live="polite">
-    @if (text().placeholder) {
-      <p class="card__flag">Placeholder text: Mykhailo’s own words to come</p>
-    }
-    @if (meta()) {
-      <p class="card__meta">{{ meta() }}</p>
-    }
-    <h2 class="card__title">{{ text().title }}</h2>
-    <p class="card__body">{{ text().body }}</p>
-  </article>
+  @if (webgl) {
+    <article class="card" aria-live="polite">
+      @if (text().placeholder) {
+        <p class="card__flag">Placeholder text: Mykhailo’s own words to come</p>
+      }
+      @if (meta()) {
+        <p class="card__meta">{{ meta() }}</p>
+      }
+      <h2 class="card__title">{{ text().title }}</h2>
+      <p class="card__body">{{ text().body }}</p>
+    </article>
+  }
 </main>
