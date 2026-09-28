@@ -2,6 +2,14 @@ import { Page, expect } from '@playwright/test';
 
 export const root = 'app-root';
 
+/** Console errors and uncaught page errors seen from now on. */
+export function collectErrors(page: Page): string[] {
+  const errors: string[] = [];
+  page.on('console', (msg) => msg.type() === 'error' && errors.push(msg.text()));
+  page.on('pageerror', (err) => errors.push(err.message));
+  return errors;
+}
+
 /** Scroll the journey to a progress between 0 and 1. */
 export async function scrollJourney(page: Page, progress: number): Promise<void> {
   await page.evaluate((p) => {

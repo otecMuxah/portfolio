@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CHAPTERS, CHAPTER_TEXT, Chapter, ChapterId } from './content/life';
@@ -6,6 +6,7 @@ import { CvView } from './cv/cv-view';
 import { Hero } from './hero/hero';
 import { JourneyState, chapterSpans, journeyAt } from './journey/journey';
 import { SceneEngine } from './scene/scene-engine';
+import { supportsWebGL } from './scene/webgl';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -22,6 +23,8 @@ const sameState = (a: JourneyState, b: JourneyState) =>
   a.chapterId === b.chapterId && a.carId === b.carId && a.phase === b.phase;
 
 const years = (c: Chapter) => (c.year === undefined ? '' : c.yearEnd ? `${c.year} – ${c.yearEnd}` : `${c.year}`);
+
+const metaOf = (c: Chapter) => [years(c), TEXT[c.id].place].filter(Boolean).join(' · ');
 
 const isChapterId = (id: string): id is ChapterId => CHAPTERS.some((c) => c.id === id);
 
@@ -42,12 +45,17 @@ export class App {
   private readonly track = viewChild.required<ElementRef<HTMLElement>>('track');
   private readonly nav = viewChild.required<ElementRef<HTMLElement>>('nav');
 
+  /**
+   * Without WebGL the story list is the page; with it, the list is there for screen readers only.
+   * Starts true so a prerendered page shows the 3D shell; the browser decides after the first render.
+   */
+  protected readonly webgl = signal(true);
+  protected readonly story = CHAPTERS.map((c) => ({ ...TEXT[c.id], id: c.id, meta: metaOf(c) }));
+
   protected readonly state = signal<JourneyState>(journeyAt(0), { equal: sameState });
   protected readonly chapter = computed(() => CHAPTERS.find((c) => c.id === this.state().chapterId)!);
   protected readonly text = computed(() => TEXT[this.state().chapterId]);
-  protected readonly meta = computed(() =>
-    [years(this.chapter()), this.text().place].filter(Boolean).join(' · '),
-  );
+  protected readonly meta = computed(() => metaOf(this.chapter()));
   protected readonly timeline = CHAPTERS.map((c) => ({ id: c.id, year: c.year, label: TEXT[c.id].label }));
   protected readonly trackHeight = `${CHAPTERS.reduce((sum, c) => sum + (c.scrollWeight ?? 1), 0) * 100}vh`;
 
@@ -57,8 +65,23 @@ export class App {
 
   constructor() {
     const destroyRef = inject(DestroyRef);
+    const injector = inject(Injector);
     afterNextRender(() => {
-      const engine = new SceneEngine(this.canvas().nativeElement, SPANS);
+      const fallBack = () => {
+        this.webgl.set(false);
+        // The list items only get their ids now, so land on a deep-linked chapter by hand.
+        afterNextRender(() => document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView(), {
+          injector,
+        });
+      };
+      if (!supportsWebGL()) return fallBack();
+      let engine: SceneEngine;
+      try {
+        engine = new SceneEngine(this.canvas().nativeElement, SPANS);
+      } catch (error) {
+        console.warn('3D renderer unavailable, showing the story list instead.', error);
+        return fallBack();
+      }
       const trigger = ScrollTrigger.create({
         trigger: this.track().nativeElement,
         start: 'top top',
@@ -101,7 +124,7 @@ export class App {
 
   protected onKey(event: KeyboardEvent): void {
     const step = NEXT_KEYS.includes(event.key) ? 1 : PREV_KEYS.includes(event.key) ? -1 : 0;
-    if (!step || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (!step || !this.webgl() || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
     const target = event.target;
     if (target instanceof Element && target.closest(KEEPS_KEYS)) return;
     if (document.querySelector('dialog[open]')) return;

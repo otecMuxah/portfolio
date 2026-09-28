@@ -1,27 +1,20 @@
-import { Page, expect, test } from '@playwright/test';
-import { root, scrollJourney, scrollToChapter } from './support';
-
-function collectErrors(page: Page) {
-  const errors: string[] = [];
-  page.on('console', (msg) => msg.type() === 'error' && errors.push(msg.text()));
-  page.on('pageerror', (err) => errors.push(err.message));
-  return errors;
-}
+import { expect, test } from '@playwright/test';
+import { collectErrors, root, scrollJourney, scrollToChapter } from './support';
 
 test('scrolling walks the visitor through each chapter in order', async ({ page }) => {
   const errors = collectErrors(page);
 
   await page.goto('/');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
-  await expect(page.getByRole('heading', { name: 'Born in Kharkiv' })).toBeVisible();
+  await expect(page.locator('.card__title')).toHaveText('Born in Kharkiv');
   await expect(page.locator(root)).toHaveAttribute('data-car', 'none');
 
   await scrollToChapter(page, 'first-code');
-  await expect(page.getByRole('heading', { name: 'Self-taught, first job' })).toBeVisible();
+  await expect(page.locator('.card__title')).toHaveText('Self-taught, first job');
   await expect(page.locator(root)).toHaveAttribute('data-car', 'forester');
 
   await scrollToChapter(page, 'iata');
-  await expect(page.getByRole('heading', { name: 'IATA' })).toBeVisible();
+  await expect(page.locator('.card__title')).toHaveText('IATA');
   await expect(page.locator('.card__meta')).toHaveText('2024 – now · Frankfurt');
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'rebuild');
 
@@ -38,7 +31,7 @@ test('scrolling walks the visitor through each chapter in order', async ({ page 
 test('the war chapter tells the night of 24 February 2022, with no placeholder flag', async ({ page }) => {
   await page.goto('/#war');
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'shatter');
-  await expect(page.getByRole('heading', { name: '24.02.2022' })).toBeVisible();
+  await expect(page.locator('.card__title')).toHaveText('24.02.2022');
   await expect(page.locator('.card')).toContainText('4 a.m. Explosions.');
   await expect(page.locator('.card')).not.toContainText('Placeholder');
 });
@@ -70,7 +63,7 @@ test('a chapter deep link lands on that chapter', async ({ page }) => {
   await page.goto('/#ciklum');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'ciklum');
   await expect(page.locator(root)).toHaveAttribute('data-car', 'f30');
-  await expect(page.getByRole('heading', { name: 'Ciklum: starting from scratch' })).toBeVisible();
+  await expect(page.locator('.card__title')).toHaveText('Ciklum: starting from scratch');
 
   expect(errors).toEqual([]);
 });
