@@ -3,7 +3,20 @@ import { EN } from './life.en';
 export type Phase = 'build' | 'shatter' | 'rebuild' | 'garage';
 
 /** Which builder renders a chapter's 3D scene (see scene/chapters). */
-export type SceneKind = 'placeholder' | 'birth' | 'school' | 'lyceum' | 'university' | 'dreamweaver' | 'family' | 'rally';
+export type SceneKind =
+  | 'placeholder'
+  | 'birth'
+  | 'school'
+  | 'lyceum'
+  | 'university'
+  | 'dreamweaver'
+  | 'family'
+  | 'rally'
+  | 'first-code'
+  | 'kharkiv-career'
+  | 'krakow'
+  | 'back-home'
+  | 'garage';
 
 export type ChapterId =
   | 'birth'
@@ -42,6 +55,18 @@ export interface ChapterText {
   body: string;
   /** Stand-in text until Mykhailo supplies his own words. */
   placeholder?: true;
+  /** Career chapters: the jobs held, as the card names them. */
+  roles?: RoleCard[];
+  /** Skills shown on the card; the scene's skill ring has one token per entry. */
+  skills?: string[];
+}
+
+export interface RoleCard {
+  company: string;
+  role: string;
+  years: string;
+  /** One to three, taken from the CV. */
+  highlights: string[];
 }
 
 export type Locale = 'en';
@@ -65,14 +90,14 @@ export const CHAPTERS: Chapter[] = [
   { id: 'dreamweaver', year: 2000, phase: 'build', scene: 'dreamweaver' },
   { id: 'family', year: 2006, yearEnd: 2010, phase: 'build', scene: 'family' },
   { id: 'rally', year: 2008, yearEnd: 2013, phase: 'build', scene: 'rally' },
-  { id: 'first-code', year: 2012, phase: 'build', scene: 'placeholder' },
-  { id: 'kharkiv-career', year: 2015, yearEnd: 2021, phase: 'build', scene: 'placeholder' },
-  { id: 'krakow', year: 2021, phase: 'build', scene: 'placeholder' },
-  { id: 'back-home', year: 2022, phase: 'build', scene: 'placeholder' },
+  { id: 'first-code', year: 2012, phase: 'build', scene: 'first-code' },
+  { id: 'kharkiv-career', year: 2015, yearEnd: 2021, phase: 'build', scene: 'kharkiv-career' },
+  { id: 'krakow', year: 2021, phase: 'build', scene: 'krakow' },
+  { id: 'back-home', year: 2022, phase: 'build', scene: 'back-home' },
   { id: 'war', year: 2022, phase: 'shatter', scene: 'placeholder' },
   { id: 'ciklum', year: 2022, yearEnd: 2024, phase: 'rebuild', scene: 'placeholder' },
   { id: 'iata', year: 2024, yearEnd: 'now', phase: 'rebuild', scene: 'placeholder' },
-  { id: 'garage', phase: 'garage', scene: 'placeholder' },
+  { id: 'garage', phase: 'garage', scene: 'garage' },
 ];
 
 export const CARS: Car[] = [

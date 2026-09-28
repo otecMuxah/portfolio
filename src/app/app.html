@@ -41,7 +41,12 @@
   </nav>
 }
 
-<main #track class="track" [class.track--static]="!webgl()" [style.height]="webgl() ? trackHeight : null">
+<main
+  #track
+  class="track"
+  [class.track--static]="!webgl()"
+  [style.height]="webgl() ? trackHeight : null"
+>
   <app-hero />
   <ol class="story" [class.story--sr-only]="webgl()" aria-label="Life story">
     @for (item of story; track item.id) {
@@ -54,9 +59,18 @@
         }
         <h2 class="story__title">{{ item.title }}</h2>
         <p class="story__body">{{ item.body }}</p>
+        <ng-container
+          *ngTemplateOutlet="
+            career;
+            context: { roles: item.roles, skills: item.skills, block: 'story' }
+          "
+        />
       </li>
     }
   </ol>
+  @if (webgl() && state().phase === 'garage') {
+    <app-garage />
+  }
   @if (webgl()) {
     <article class="card" aria-hidden="true">
       @if (text().placeholder) {
@@ -67,6 +81,33 @@
       }
       <h2 class="card__title">{{ text().title }}</h2>
       <p class="card__body">{{ text().body }}</p>
+      <ng-container
+        *ngTemplateOutlet="
+          career;
+          context: { roles: text().roles, skills: text().skills, block: 'card' }
+        "
+      />
     </article>
   }
 </main>
+
+<ng-template #career let-roles="roles" let-skills="skills" let-block="block">
+  @for (job of roles ?? []; track job.company) {
+    <section [class]="block + '__role'">
+      <h3 [class]="block + '__company'">{{ job.company }}</h3>
+      <p [class]="block + '__position'">{{ job.role }} · {{ job.years }}</p>
+      <ul [class]="block + '__highlights'">
+        @for (line of job.highlights; track line) {
+          <li>{{ line }}</li>
+        }
+      </ul>
+    </section>
+  }
+  @if (skills) {
+    <ul [class]="block + '__skills'" aria-label="Skills">
+      @for (skill of skills; track skill) {
+        <li>{{ skill }}</li>
+      }
+    </ul>
+  }
+</ng-template>

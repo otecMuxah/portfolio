@@ -41,24 +41,84 @@ export const EN: Record<ChapterId, ChapterText> = {
     place: 'Ukraine',
     title: 'Self-taught, first job',
     body: 'Taught himself to code and landed a first job as a front-end developer at Webholder.',
+    roles: [
+      {
+        company: 'Webholder',
+        role: 'Front End Developer',
+        years: '2012 – 2015',
+        highlights: ['Delivered HTML and CSS markup for a tailoring management platform.'],
+      },
+    ],
   },
   'kharkiv-career': {
     label: 'Kharkiv career',
     place: 'Kharkiv',
     title: 'The Kharkiv career years',
-    body: 'Frontend Developer at Raccoon Gang (2015–2018), JavaScript Developer at Eastern Peak (2018–2019), JavaScript Engineer at TEAM International (2019–2021).',
+    body: 'Growing as an engineer across three Kharkiv companies.',
+    roles: [
+      {
+        company: 'Raccoon Gang',
+        role: 'Frontend Developer',
+        years: '2015 – 2018',
+        highlights: [
+          'Customised the OpenEdX platform, delivering hundreds of tailored EdX environments.',
+        ],
+      },
+      {
+        company: 'Eastern Peak',
+        role: 'JavaScript Developer',
+        years: '2018 – 2019',
+        highlights: [
+          'Built FYRE, a restaurant management and delivery CMS, with a first load under one second.',
+        ],
+      },
+      {
+        company: 'TEAM International',
+        role: 'JavaScript Engineer',
+        years: '2019 – 2021',
+        highlights: ['Cut page load time from 25 seconds to 6 through lazy loading.'],
+      },
+    ],
+    skills: ['Angular', 'TypeScript', 'RxJS', 'JavaScript', 'HTML5', 'SCSS/CSS', 'Django'],
   },
   krakow: {
     label: 'Kraków',
     place: 'Kraków',
     title: 'Kraków: leading the front end',
-    body: 'Lead Frontend Developer at Corporate Finance Institute: founded the front end of a finance learning platform for 100,000+ users, led a team of 5 and shipped its mobile app single-handed. Part-time JavaScript Developer at PENTASOFT alongside.',
+    body: 'In 2021 he moved to Kraków, leading the front end at Corporate Finance Institute, headquartered in Warsaw.',
+    roles: [
+      {
+        company: 'Corporate Finance Institute',
+        role: 'Lead Frontend Developer',
+        years: '2020 – 2022',
+        highlights: [
+          'Founded and architected the front end of a finance learning platform for 100,000+ users: sub-1s load, sub-200KB bundle.',
+          'Led a team of 5 as head of the front-end function.',
+        ],
+      },
+      {
+        company: 'PENTASOFT',
+        role: 'JavaScript Developer, part-time',
+        years: '2021 – 2022',
+        highlights: ['Built NEURON, an IoT platform for real-time monitoring of sensor networks.'],
+      },
+    ],
   },
   'back-home': {
     label: 'Back home',
     place: 'Kharkiv',
     title: 'Back to Kharkiv',
     body: 'Early 2022: home again in Kharkiv, in the world he had built.',
+    roles: [
+      {
+        company: 'Corporate Finance Institute',
+        role: 'Lead Frontend Developer',
+        years: '2020 – 2022',
+        highlights: [
+          "Created CFI's cross-platform mobile app from its first commit and shipped it to both stores single-handed.",
+        ],
+      },
+    ],
   },
   war: {
     label: 'War',
