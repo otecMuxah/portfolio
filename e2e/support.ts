@@ -16,10 +16,12 @@ export async function scrollToChapter(page: Page, chapterId: string): Promise<vo
     const max = document.documentElement.scrollHeight - innerHeight;
     const rootEl = document.querySelector('app-root')!;
     const hits: number[] = [];
-    for (let i = 0; i <= 400; i++) {
-      window.scrollTo(0, (max * i) / 400);
+    // 1% steps resolve every chapter span; stop once the scan has passed the chapter.
+    for (let i = 0; i <= 100; i++) {
+      window.scrollTo(0, (max * i) / 100);
       await new Promise(requestAnimationFrame);
-      if (rootEl.getAttribute('data-chapter') === id) hits.push(i / 400);
+      if (rootEl.getAttribute('data-chapter') === id) hits.push(i / 100);
+      else if (hits.length) break;
     }
     return hits.length ? [hits[0], hits[hits.length - 1]] : null;
   }, chapterId);
