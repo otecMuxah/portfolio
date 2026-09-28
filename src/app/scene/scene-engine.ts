@@ -8,8 +8,11 @@ import { CHAPTER_BUILDERS } from './chapters';
 const CHAPTER_GAP = 40;
 const CAMERA_OFFSET = new THREE.Vector3(0, 6, 18);
 const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
-/** Where the car rides relative to the camera's chapter anchor: ahead of the camera, beside the chapter's scene. */
-const CAR_OFFSET = new THREE.Vector3(4.5, 0, 5);
+/**
+ * Where the car rides relative to the point the camera frames (camera minus CAMERA_OFFSET): at a chapter's
+ * midpoint that is the anchor, putting the car in the lane art-direction.md keeps clear (|x| < 3, z 4–14).
+ */
+const CAR_OFFSET = new THREE.Vector3(2, 0, 6.5);
 
 /** Owns the Three.js renderer, camera and loop. Runs outside Angular change detection. */
 export class SceneEngine {
@@ -21,6 +24,8 @@ export class SceneEngine {
   private readonly chapterScenes: ChapterScene[];
   private readonly clock = new THREE.Timer();
   private readonly carRig = new CarRig();
+  private readonly carAt = new THREE.Vector3();
+  private readonly tangent = new THREE.Vector3();
   private target = 0;
   private current = 0;
 
@@ -82,8 +87,8 @@ export class SceneEngine {
     const t = this.pathT(this.current);
     this.camera.position.copy(this.path.getPoint(t));
     this.camera.lookAt(this.camera.position.clone().sub(CAMERA_OFFSET).add(LOOK_OFFSET));
-    const carAt = this.camera.position.clone().sub(CAMERA_OFFSET).add(CAR_OFFSET);
-    this.carRig.update(journeyAt(this.current).carId, carAt, this.path.getTangent(t), time);
+    this.carAt.copy(this.camera.position).sub(CAMERA_OFFSET).add(CAR_OFFSET);
+    this.carRig.update(journeyAt(this.current).carId, this.carAt, this.path.getTangent(t, this.tangent), time);
     this.renderer.render(this.scene, this.camera);
   }
 

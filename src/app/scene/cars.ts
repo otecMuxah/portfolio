@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CarId } from '../content/life';
 
 type Profile = [x: number, y: number][];
 
@@ -16,7 +17,7 @@ interface CarModel {
   extras?: (car: THREE.Group, body: THREE.Material) => void;
 }
 
-const MODELS: Record<string, CarModel> = {
+const MODELS: Record<CarId, CarModel> = {
   // Boxy two-box hatch with an upright tailgate.
   golf2: {
     colour: '#c8202a',
@@ -67,8 +68,9 @@ const MODELS: Record<string, CarModel> = {
     lower: [[-2.3, 0.3], [2.3, 0.3], [2.36, 0.68], [2.2, 0.9], [1.1, 1], [-1.55, 1.05], [-2.3, 1.02], [-2.36, 0.68]],
     cabin: [[1.05, 1], [0.35, 1.45], [-0.9, 1.47], [-1.55, 1.05]],
     extras: (car) => {
-      const grille = new THREE.MeshStandardMaterial({ color: '#9aa0a8', metalness: 0.8, roughness: 0.3 });
-      for (const z of [-0.17, 0.17]) car.add(box([0.06, 0.18, 0.26], [2.31, 0.78, z], grille));
+      // Low metalness: there is no env map, so a metallic grille would reflect nothing and read black.
+      const grille = new THREE.MeshStandardMaterial({ color: '#c9ced6', metalness: 0.2, roughness: 0.4 });
+      for (const z of [-0.17, 0.17]) car.add(box([0.08, 0.18, 0.26], [2.33, 0.78, z], grille));
     },
   },
 };
@@ -79,7 +81,7 @@ const HEADLIGHT = new THREE.MeshStandardMaterial({ color: '#fff4d6', emissive: '
 const TAILLIGHT = new THREE.MeshStandardMaterial({ color: '#ff2a1a', emissive: '#ff2a1a', emissiveIntensity: 1.5 });
 
 /** Builds a car as a group; its wheels are named `wheel` so the rig can spin them. */
-export function buildCar(carId: string): THREE.Group {
+export function buildCar(carId: CarId): THREE.Group {
   const model = MODELS[carId];
   const body = new THREE.MeshStandardMaterial({
     color: model.colour,
@@ -121,7 +123,7 @@ export function buildCar(carId: string): THREE.Group {
   return car;
 }
 
-export function wheelRadius(carId: string): number {
+export function wheelRadius(carId: CarId): number {
   return MODELS[carId].wheelRadius;
 }
 

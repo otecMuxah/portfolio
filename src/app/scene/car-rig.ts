@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CARS } from '../content/life';
+import { CARS, CarId } from '../content/life';
 import { buildCar, wheelRadius } from './cars';
 
 const SWAP_SECONDS = 0.9;
@@ -12,11 +12,11 @@ const easeOutBack = (s: number) => 1 + 2.7 * (s - 1) ** 3 + 1.7 * (s - 1) ** 2;
  */
 export class CarRig {
   readonly object = new THREE.Group();
-  private readonly cars = new Map<string, THREE.Group>();
+  private readonly cars = new Map<CarId, THREE.Group>();
   private readonly ring: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
   private readonly lastPosition = new THREE.Vector3();
-  private shown: string | null = null;
-  private outgoing: string | null = null;
+  private shown: CarId | null = null;
+  private outgoing: CarId | null = null;
   private swapStart = -Infinity;
 
   constructor() {
@@ -32,19 +32,15 @@ export class CarRig {
     );
     this.ring.visible = false;
     this.object.add(this.ring);
-    // A short-range key light so flat-shaded panels (and the black F30) read against the night sky.
-    const key = new THREE.PointLight('#ffe8c7', 40, 12);
-    key.position.set(-1.5, 4, 3);
-    this.object.add(key);
   }
 
   /** Places the rig at `position` facing along `direction`, showing `carId` (or nothing). */
-  update(carId: string | null, position: THREE.Vector3, direction: THREE.Vector3, time: number): void {
+  update(carId: CarId | null, position: THREE.Vector3, direction: THREE.Vector3, time: number): void {
     if (carId !== this.shown) {
       this.outgoing = this.shown;
       this.shown = carId;
       this.swapStart = time;
-      this.ring.material.color.set(this.cars.get(carId ?? this.outgoing ?? '')?.userData['colour'] ?? '#e8c89a');
+      this.ring.material.color.set(this.cars.get((carId ?? this.outgoing)!)?.userData['colour'] ?? '#e8c89a');
     }
     const travelled = position.distanceTo(this.lastPosition);
     this.lastPosition.copy(position);

@@ -47,8 +47,10 @@ export type Locale = 'en';
 
 export const CHAPTER_TEXT: Record<Locale, Record<ChapterId, ChapterText>> = { en: EN };
 
+export type CarId = 'golf2' | 'mazda323f' | 'mazda3' | 'forester' | 'f30';
+
 export interface Car {
-  id: string;
+  id: CarId;
   name: string;
   colour: string;
   fromYear: number;
