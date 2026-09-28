@@ -2,10 +2,12 @@ import { SceneKind } from '../../content/life';
 import { ChapterBuilder } from '../chapter-scene';
 import { backHome } from './back-home';
 import { birth } from './birth';
+import { ciklum } from './ciklum';
 import { dreamweaver } from './dreamweaver';
 import { family } from './family';
 import { firstCode } from './first-code';
 import { garage } from './garage';
+import { iata } from './iata';
 import { kharkivCareer } from './kharkiv-career';
 import { krakow } from './krakow';
 import { lyceum } from './lyceum';
@@ -30,5 +32,7 @@ export const CHAPTER_BUILDERS: Record<SceneKind, ChapterBuilder> = {
   krakow,
   'back-home': backHome,
   war,
+  ciklum,
+  iata,
   garage,
 };

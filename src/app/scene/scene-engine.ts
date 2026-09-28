@@ -5,7 +5,9 @@ import { CarRig } from './car-rig';
 import { buildCar } from './cars';
 import { ChapterScene, chapterAnchor } from './chapter-scene';
 import { CHAPTER_BUILDERS } from './chapters';
-import { GRADE_UNIFORMS, gradeAll, gradeAt, gradeColor } from './grade';
+import { LIGHT } from './chapters/war';
+import { GRADE_UNIFORMS, dawnAt, gradeAll, gradeAt, gradeColor } from './grade';
+import { f30Assembled } from './rebuild';
 import { Shatter, shakeAt } from './shatter';
 
 /** The camera travels a road beside the scenes, framing each subject from the front-right (a 3/4 view). */
@@ -23,6 +25,7 @@ const CAR_OFFSET = new THREE.Vector3(12, 0, 2);
 const WAR_PARK = 0.12;
 const WAR_STOP = 0.3;
 const NIGHT = new THREE.Color(PALETTE.night);
+const DAWN_SKY = new THREE.Color(PALETTE.dawnSky);
 
 /** Where the camera is along the road (anchor units) at given progress points; linear between them. */
 function roadStops(spans: ChapterSpan[]): [progress: number, at: number][] {
@@ -53,9 +56,12 @@ export class SceneEngine {
   private readonly look = new THREE.Vector3();
   private readonly shake = new THREE.Vector3();
   private readonly grade = gradeAt(0);
+  private readonly sky = new THREE.Color();
   private readonly stops: [number, number][];
   /** The war chapter's span, and the world breaking in it once every chapter has been built. */
   private readonly war?: ChapterSpan;
+  /** Where the war's last light hangs (world): the F30 assembles out of it. */
+  private readonly lastLight = new THREE.Vector3();
   private shatter?: Shatter;
   private target = 0;
   private disposed = false;
@@ -79,6 +85,7 @@ export class SceneEngine {
     this.path = new THREE.CatmullRomCurve3(this.anchors.map((a) => a.clone().add(CAMERA_OFFSET)));
     this.stops = roadStops(spans);
     this.war = spans.find((s) => s.chapter.phase === 'shatter');
+    if (this.war) this.lastLight.copy(this.anchors[this.war.index]).add(LIGHT);
     // Added before load() compiles so the car materials are ready with the first chapter.
     gradeAll(this.carRig.object);
     this.scene.add(this.carRig.object);
@@ -213,24 +220,30 @@ export class SceneEngine {
     this.carRig.update(journeyAt(this.current).carId, this.carAt, this.path.getTangent(t, this.tangent), time);
 
     const war = this.war ? (this.current - this.war.start) / (this.war.end - this.war.start) : 0;
+    // Whole until the war; after it, assembled anew out of the last light.
+    this.carRig.assemble(war >= 1 ? f30Assembled(this.current) : 1, this.lastLight);
     const roll = shakeAt(war, this.shake);
     this.camera.position.add(this.shake);
     this.camera.lookAt(this.look.add(this.shake));
     this.camera.rotateZ(roll);
     if (this.shatter) {
-      // Once the war starts the world built before it, and the car, exist only as shards; after it, not at all.
+      // Once the war starts the world built before it, and the car, exist only as shards; after it, not at all. The
+      // car comes back after the war, assembled anew out of the last light.
       const whole = this.shatter.update(war) <= 0;
       for (let i = 0; i < this.spans.length; i++) {
         const built = this.chapterScenes[i];
         if (built && this.spans[i].chapter.phase === 'build') built.object.visible = whole;
       }
-      this.carRig.object.visible = whole;
+      this.carRig.object.visible = whole || war >= 1;
     }
 
     gradeAt(this.current, this.grade);
     GRADE_UNIFORMS.uGradeSaturation.value = this.grade.saturation;
     GRADE_UNIFORMS.uGradeExposure.value = this.grade.exposure;
-    gradeColor(NIGHT, this.grade, this.scene.background as THREE.Color);
+    // The rebuild opens the night into a dawn sky; the fog takes its colour so distance fades into it.
+    this.sky.lerpColors(NIGHT, DAWN_SKY, dawnAt(this.current));
+    (this.scene.fog as THREE.Fog).color.copy(this.sky);
+    gradeColor(this.sky, this.grade, this.scene.background as THREE.Color);
     this.renderer.render(this.scene, this.camera);
   }
 

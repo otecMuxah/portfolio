@@ -160,7 +160,7 @@ test('two full scroll passes through the war allocate no new GPU geometry or tex
     let car = journeyAt(0).carId;
     for (const p of [...stops, ...[...stops].reverse()]) {
       await snapTo(page, p);
-      // The rig swaps cars over 0.9 s of clock time (and carries none from the war on): let a new one land.
+      // The rig swaps cars over 0.9 s of clock time (and carries none through the war): let a new one land.
       if (journeyAt(p).carId !== car && p <= at('war', 0)) await page.waitForTimeout(1000);
       car = journeyAt(p).carId;
     }
