@@ -3,7 +3,7 @@ import { EN } from './life.en';
 export type Phase = 'build' | 'shatter' | 'rebuild' | 'garage';
 
 /** Which builder renders a chapter's 3D scene (see scene/chapters). */
-export type SceneKind = 'placeholder';
+export type SceneKind = 'placeholder' | 'birth' | 'school' | 'lyceum' | 'university' | 'dreamweaver' | 'family';
 
 export type ChapterId =
   | 'birth'
@@ -57,12 +57,12 @@ export interface Car {
 }
 
 export const CHAPTERS: Chapter[] = [
-  { id: 'birth', year: 1981, phase: 'build', scene: 'placeholder' },
-  { id: 'school', year: 1987, yearEnd: 1994, phase: 'build', scene: 'placeholder' },
-  { id: 'lyceum', year: 1994, yearEnd: 1998, phase: 'build', scene: 'placeholder' },
-  { id: 'university', year: 1998, yearEnd: 2004, phase: 'build', scene: 'placeholder' },
-  { id: 'dreamweaver', year: 2000, phase: 'build', scene: 'placeholder' },
-  { id: 'family', year: 2006, yearEnd: 2010, phase: 'build', scene: 'placeholder' },
+  { id: 'birth', year: 1981, phase: 'build', scene: 'birth' },
+  { id: 'school', year: 1987, yearEnd: 1994, phase: 'build', scene: 'school' },
+  { id: 'lyceum', year: 1994, yearEnd: 1998, phase: 'build', scene: 'lyceum' },
+  { id: 'university', year: 1998, yearEnd: 2004, phase: 'build', scene: 'university' },
+  { id: 'dreamweaver', year: 2000, phase: 'build', scene: 'dreamweaver' },
+  { id: 'family', year: 2006, yearEnd: 2010, phase: 'build', scene: 'family' },
   { id: 'first-code', year: 2012, phase: 'build', scene: 'placeholder' },
   { id: 'kharkiv-career', year: 2015, yearEnd: 2021, phase: 'build', scene: 'placeholder' },
   { id: 'krakow', year: 2021, phase: 'build', scene: 'placeholder' },
