@@ -23,6 +23,63 @@
 
 .track {
   position: relative;
+
+  &--static {
+    padding: 100vh clamp(1rem, 5vw, 4rem) 4rem;
+  }
+}
+
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  color: #f4efe6;
+
+  &--sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  &__item {
+    padding: 1.25rem 1.5rem;
+    border-left: 3px solid #ffb35c;
+    border-radius: 12px;
+    background: rgb(244 239 230 / 6%);
+  }
+
+  &__meta {
+    margin: 0 0 0.25rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  &__title {
+    margin: 0 0 0.5rem;
+    font-size: 1.6rem;
+  }
+
+  &__body {
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  &__flag {
+    margin: 0 0 0.5rem;
+    color: #ff6b5b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
 }
 
 .card {
@@ -52,44 +109,6 @@
   &__body {
     margin: 0;
     line-height: 1.5;
-  }
-
-  &__role {
-    margin-top: 0.75rem;
-  }
-
-  &__company {
-    margin: 0;
-    font-size: 1rem;
-  }
-
-  &__position {
-    margin: 0;
-    font-size: 0.85rem;
-    opacity: 0.75;
-  }
-
-  &__highlights {
-    margin: 0.25rem 0 0;
-    padding-left: 1.1rem;
-    font-size: 0.85rem;
-    line-height: 1.4;
-  }
-
-  &__skills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin: 0.75rem 0 0;
-    padding: 0;
-    list-style: none;
-
-    li {
-      padding: 0.1rem 0.5rem;
-      border: 1px solid rgb(242 204 143 / 55%);
-      border-radius: 999px;
-      font-size: 0.75rem;
-    }
   }
 
   &__flag {
@@ -179,6 +198,48 @@
 
     &__item {
       white-space: nowrap;
+    }
+  }
+}
+
+// Career roles and skills, shared by the chapter card and the story list.
+.card,
+.story {
+  &__role {
+    margin-top: 0.75rem;
+  }
+
+  &__company {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  &__position {
+    margin: 0;
+    font-size: 0.85rem;
+    opacity: 0.75;
+  }
+
+  &__highlights {
+    margin: 0.25rem 0 0;
+    padding-left: 1.1rem;
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  &__skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      padding: 0.1rem 0.5rem;
+      border: 1px solid rgb(242 204 143 / 55%);
+      border-radius: 999px;
+      font-size: 0.75rem;
     }
   }
 }
