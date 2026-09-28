@@ -1,7 +1,8 @@
-// Phones: narrow portrait screens, and short wide ones held sideways. The scene engine reads --landscape-phone off the
-// canvas, so this stays the one definition of both.
+// Phones: narrow portrait screens, and short wide ones held sideways. The scene engine reads --portrait-phone and
+// --landscape-phone off the canvas, so this stays the one definition of both.
+$portrait-phone: '(max-width: 767px)';
 $landscape-phone: '(max-height: 500px) and (orientation: landscape)';
-$phone: '(max-width: 767px), #{$landscape-phone}';
+$phone: '#{$portrait-phone}, #{$landscape-phone}';
 
 .scene {
   position: fixed;
@@ -9,6 +10,10 @@ $phone: '(max-width: 767px), #{$landscape-phone}';
   width: 100%;
   height: 100%;
   display: block;
+
+  @media #{$portrait-phone} {
+    --portrait-phone: 1;
+  }
 
   @media #{$landscape-phone} {
     --landscape-phone: 1;
