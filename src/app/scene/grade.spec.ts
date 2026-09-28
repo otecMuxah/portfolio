@@ -39,7 +39,7 @@ describe('gradeAt', () => {
     expect(gradeAt(at('ciklum', 0))).toEqual(gradeAt(at('war', 0.999)));
     let last = gradeAt(at('ciklum', 0));
     for (let i = 1; i <= 100; i++) {
-      const g = gradeAt(at('ciklum', 0) + (at('garage', 0) - at('ciklum', 0)) * (i / 100));
+      const g = gradeAt(at('ciklum', 0) + (1 - at('ciklum', 0)) * (i / 100));
       expect(g.saturation).toBeGreaterThanOrEqual(last.saturation);
       expect(g.exposure).toBeGreaterThanOrEqual(last.exposure);
       last = g;
@@ -50,7 +50,6 @@ describe('gradeAt', () => {
     expect(gradeAt(at('ciklum', 0.5)).saturation).toBeLessThan(0.9);
     expect(gradeAt(at('iata', 0.25))).toEqual({ saturation: 1, exposure: 1 });
     expect(gradeAt(at('iata', 0.9))).toEqual({ saturation: 1, exposure: 1 });
-    expect(gradeAt(at('garage', 0))).toEqual({ saturation: 1, exposure: 1 });
     expect(gradeAt(1)).toEqual({ saturation: 1, exposure: 1 });
   });
 
@@ -69,7 +68,7 @@ describe('dawnAt', () => {
     for (const p of [0, at('back-home', 0.5), at('war', 0.5), at('ciklum', 0)]) expect(dawnAt(p)).toBe(0);
     expect(dawnAt(at('ciklum', 0.5))).toBeGreaterThan(0);
     expect(dawnAt(at('ciklum', 0.5))).toBeLessThan(1);
-    for (const p of [at('iata', 0.25), at('iata', 0.9), at('garage', 0.5), 1]) expect(dawnAt(p)).toBe(1);
+    for (const p of [at('iata', 0.25), at('iata', 0.9), 1]) expect(dawnAt(p)).toBe(1);
     const steps = Array.from({ length: 101 }, (_, i) => i / 100);
     const forward = steps.map(dawnAt);
     expect([...steps].reverse().map(dawnAt).reverse()).toEqual(forward);

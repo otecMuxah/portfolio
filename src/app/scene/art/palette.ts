@@ -38,7 +38,6 @@ export const PALETTE = {
   dawnSky: '#1b2c40',
 
   concrete: '#6b6b6b',
-  studio: '#e6e6e6',
 } as const;
 
 export type PaletteKey = keyof typeof PALETTE;
