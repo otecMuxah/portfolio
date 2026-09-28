@@ -8,6 +8,7 @@ const ORDER = [
   'university',
   'dreamweaver',
   'family',
+  'rally',
   'first-code',
   'kharkiv-career',
   'krakow',
@@ -37,13 +38,13 @@ describe('journeyAt', () => {
     expect(journeyAt(1.3).chapterId).toBe('garage');
   });
 
-  it('visits all 13 chapters and then the garage exactly once, in order, across the scroll', () => {
+  it('visits all 14 chapters and then the garage exactly once, in order, across the scroll', () => {
     expect(visitedInOrder().map((s) => s.chapterId)).toEqual(ORDER);
   });
 
-  it('builds through chapters 1–10, shatters in 11, rebuilds in 12–13 and ends in the garage', () => {
+  it('builds through chapters 1–11, shatters in 12, rebuilds in 13–14 and ends in the garage', () => {
     expect(visitedInOrder().map((s) => s.phase)).toEqual([
-      ...Array(10).fill('build'),
+      ...Array(11).fill('build'),
       'shatter',
       'rebuild',
       'rebuild',
@@ -60,6 +61,7 @@ describe('journeyAt', () => {
       university: null,
       dreamweaver: null,
       family: 'mazda3',
+      rally: 'forester',
       'first-code': 'forester',
       'kharkiv-career': 'f30',
       ciklum: 'f30',
@@ -91,7 +93,7 @@ describe('the car carrying the camera', () => {
     expect(yearAt(spans, at('dreamweaver', 0))).toBe(2000);
     expect(yearAt(spans, at('dreamweaver', 0.5))).toBeCloseTo(2003);
     expect(yearAt(spans, at('family', 0))).toBeCloseTo(2006);
-    expect(yearAt(spans, at('family', 0.5))).toBeCloseTo(2009);
+    expect(yearAt(spans, at('family', 0.5))).toBeCloseTo(2007);
     expect(yearAt(spans, at('back-home', 0.5))).toBe(2022);
   });
 
@@ -109,8 +111,9 @@ describe('the car carrying the camera', () => {
     expect(journeyAt(at('dreamweaver', 0.51)).carId).toBe('golf2');
     expect(journeyAt(at('dreamweaver', 0.68)).carId).toBe('mazda323f');
     expect(journeyAt(at('family', 0.01)).carId).toBe('mazda3');
-    expect(journeyAt(at('family', 0.32)).carId).toBe('mazda3');
-    expect(journeyAt(at('family', 0.34)).carId).toBe('forester');
+    expect(journeyAt(at('family', 0.99)).carId).toBe('mazda3');
+    expect(journeyAt(at('rally', 0)).carId).toBe('forester');
+    expect(journeyAt(at('rally', 0.99)).carId).toBe('forester');
     expect(journeyAt(at('first-code', 0.32)).carId).toBe('forester');
     expect(journeyAt(at('first-code', 0.34)).carId).toBe('f30');
   });

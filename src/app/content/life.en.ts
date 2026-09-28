@@ -31,6 +31,11 @@ export const EN: Record<ChapterId, ChapterText> = {
     title: 'Family',
     body: 'He met his wife in 2006. They married in 2010, and their daughter was born the same year.',
   },
+  rally: {
+    label: 'Rally',
+    title: 'Amateur rally',
+    body: 'Amateur rally: occasional non-pro events, 2008–2013',
+  },
   'first-code': {
     label: 'First code',
     place: 'Ukraine',

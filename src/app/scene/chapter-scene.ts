@@ -17,3 +17,10 @@ export interface ChapterScene {
 }
 
 export type ChapterBuilder = (chapter: Chapter, index: number) => ChapterScene;
+
+const CHAPTER_GAP = 40;
+
+/** Where chapter `index` sits in the world: 40 m apart along -z, swaying across; the camera path runs through these. */
+export function chapterAnchor(index: number, target = new THREE.Vector3()): THREE.Vector3 {
+  return target.set(Math.sin(index) * 12, 0, -index * CHAPTER_GAP);
+}

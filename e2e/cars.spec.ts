@@ -27,9 +27,9 @@ test('the car he owned carries the camera, swapping as the scrolled year passes 
   expect(await carsWhileScrolling(page, 'forward')).toEqual([...owned, 'none']);
   expect(await carsWhileScrolling(page, 'back')).toEqual([...owned, 'none'].reverse());
 
-  // Mid-family is 2009: the Forester (2008) has already replaced the Mazda 3 the chapter opened with.
+  // Mid-family is 2007: still the Mazda 3; the Forester (2008) arrives with the rally chapter.
   await scrollToChapter(page, 'family');
-  await expect(page.locator(root)).toHaveAttribute('data-car', 'forester');
+  await expect(page.locator(root)).toHaveAttribute('data-car', 'mazda3');
   await scrollJourney(page, 0);
   await expect(page.locator(root)).toHaveAttribute('data-car', 'none');
 

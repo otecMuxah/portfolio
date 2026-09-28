@@ -10,6 +10,7 @@ import { kharkivCareer } from './kharkiv-career';
 import { krakow } from './krakow';
 import { lyceum } from './lyceum';
 import { placeholder } from './placeholder';
+import { rally } from './rally';
 import { school } from './school';
 import { university } from './university';
 
@@ -22,6 +23,7 @@ export const CHAPTER_BUILDERS: Record<SceneKind, ChapterBuilder> = {
   university,
   dreamweaver,
   family,
+  rally,
   'first-code': firstCode,
   'kharkiv-career': kharkivCareer,
   krakow,
