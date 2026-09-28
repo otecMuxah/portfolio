@@ -17,6 +17,17 @@ async function expectCvShown(page: Page) {
   await expect(cv.getByText(/delivered 138 Jira stories/i)).toBeVisible();
   await expect(cv.getByRole('heading', { name: /Webholder/ })).toBeAttached();
   await expect(cv.getByText(/Java 25, Spring Boot 4/)).toBeAttached();
+  await expect(cv.getByText(/Review is the human step; authoring largely is not\./)).toBeAttached();
+  await expect(cv.getByText('AI-Assisted Engineering', { exact: true })).toBeAttached();
+  await expect(cv.getByText('Domains', { exact: true })).toBeAttached();
+  await expect(
+    cv.getByText(/ARM Index: introduced the project's first automated E2E/),
+  ).toBeAttached();
+  await expect(cv.getByText('HIPAA Certification - 2018 - 2019')).toBeAttached();
+  await expect(
+    cv.getByText('Angular / Django Full-Stack Development - Udemy - 2020'),
+  ).toBeAttached();
+  await expect(cv.getByText(/Work authorisation: German residence permit/)).toBeVisible();
   await expect(cv.getByRole('link', { name: 'otecmuxah@gmail.com' })).toHaveAttribute(
     'href',
     'mailto:otecmuxah@gmail.com',

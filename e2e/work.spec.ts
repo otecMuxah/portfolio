@@ -76,10 +76,14 @@ test.describe('desktop', () => {
 
   test('the screen-reader story lists every company’s stack under its name', async ({ page }) => {
     await visit(page, '/');
+    // A company met in two chapters (CFI in Kraków and back home) has a list in each, in story order.
+    const seen = new Map<string, number>();
     for (const { role } of STEPS) {
-      const list = page.getByRole('list', { name: `Technologies at ${role.company}` });
-      await expect(list.first()).toBeAttached();
-      await expect(list.first().getByRole('listitem')).toHaveText(role.tech);
+      const n = seen.get(role.company) ?? 0;
+      seen.set(role.company, n + 1);
+      const list = page.getByRole('list', { name: `Technologies at ${role.company}` }).nth(n);
+      await expect(list).toBeAttached();
+      await expect(list.getByRole('listitem')).toHaveText(role.tech);
     }
   });
 

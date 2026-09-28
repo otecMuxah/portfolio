@@ -8,7 +8,7 @@ const EVIDENCE = 'docs/analysis/16-evidence';
 interface SceneInfo {
   settled: boolean;
   built: boolean;
-  /** Camera position then quaternion. */
+  /** The camera's world matrix. */
   camera: number[];
 }
 

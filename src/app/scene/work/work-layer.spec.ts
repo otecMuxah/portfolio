@@ -70,6 +70,14 @@ describe('work layer content', () => {
     }
   });
 
+  it("keeps the owner's decisions: Ciklum's clients shown via Ciklum, places where he lived", () => {
+    const via = Object.fromEntries(CAREER_STEPS.map((r) => [r.company, r.via]));
+    expect(via['Redstor']).toBe('Ciklum');
+    expect(via['Deloitte']).toBe('Ciklum');
+    expect(CHAPTER_TEXT.en.ciklum.place).toBe('Aschaffenburg, Bavaria');
+    expect(CHAPTER_TEXT.en.iata.place).toBe('Aschaffenburg, then Frankfurt');
+  });
+
   it('shows a domain only where the CV or the owner states it', () => {
     for (const role of CAREER_STEPS) {
       const owner = DOMAIN_FROM_OWNER[role.company];

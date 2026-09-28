@@ -22,6 +22,13 @@ const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
  */
 const LANDSCAPE_PHONE_BACK = 1.3;
 const LANDSCAPE_PHONE_DROP = 3;
+/**
+ * On a phone held upright the screen is narrow and the car rides right of the scene, out of frame, so the camera, the
+ * road's and the chase's alike, looks this share of the way toward the car and stands this much further back from
+ * that point, holding the car and the scene behind it both in frame above the folded card.
+ */
+const PORTRAIT_PHONE_TO_CAR = 0.5;
+const PORTRAIT_PHONE_BACK = 1.6;
 const NIGHT = new THREE.Color(PALETTE.night);
 const DAWN_SKY = new THREE.Color(PALETTE.dawnSky);
 /** Reduced motion: how much light the still scene loses or regains per frame as it dips between chapters. */
@@ -63,6 +70,7 @@ export class SceneEngine {
   private current = 0;
   /** Set from app.scss, which owns the phone breakpoints. */
   private landscapePhone = false;
+  private portraitPhone = false;
   /** Set once from app.scss, before anything builds: phones get fewer particles and a coarser shatter (#16). */
   private readonly phone: boolean;
   /** Read every frame: with it each chapter holds still (stillAt) and the scene dips through the dark between them. */
@@ -123,8 +131,45 @@ export class SceneEngine {
     this.renderer.setAnimationLoop(() => this.frame());
     // Dev builds only (stripped from prod): lets e2e read GPU memory, wait for the eased camera to settle
     // or every chapter (and the war's shards) to build, snap the camera to a progress so repeated passes draw the
-    // same frames, and read the shards' budget and the last frame's draw calls.
+    // same frames, read the shards' budget and the last frame's draw calls, and see where the rider and the car land on
+    // screen and where the camera stands.
     if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+      /**
+       * Dev only: the screen rectangle (CSS pixels) of the rider and the car as last drawn, from each visible mesh's box
+       * projected through the camera; null when neither shows.
+       */
+      const heroRect = (): { left: number; top: number; right: number; bottom: number } | null => {
+        const box = new THREE.Box3();
+        const corner = new THREE.Vector3();
+        const rect = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
+        const { clientWidth: w, clientHeight: h } = this.canvas;
+        const cars = this.carRig.object.visible
+          ? this.carRig.object.children.filter((c) => c instanceof THREE.Group)
+          : [];
+        const hero = [this.rider.object, ...cars];
+        for (const part of hero)
+          part.traverseVisible((obj) => {
+            if (!(obj instanceof THREE.Mesh)) return;
+            if (obj instanceof THREE.SkinnedMesh) obj.computeBoundingBox();
+            else if (!obj.geometry.boundingBox) obj.geometry.computeBoundingBox();
+            box.copy(
+              obj instanceof THREE.SkinnedMesh ? obj.boundingBox! : obj.geometry.boundingBox!,
+            );
+            for (let i = 0; i < 8; i++) {
+              corner.set(
+                i & 1 ? box.max.x : box.min.x,
+                i & 2 ? box.max.y : box.min.y,
+                i & 4 ? box.max.z : box.min.z,
+              );
+              corner.applyMatrix4(obj.matrixWorld).project(this.camera);
+              rect.left = Math.min(rect.left, ((corner.x + 1) / 2) * w);
+              rect.right = Math.max(rect.right, ((corner.x + 1) / 2) * w);
+              rect.top = Math.min(rect.top, ((1 - corner.y) / 2) * h);
+              rect.bottom = Math.max(rect.bottom, ((1 - corner.y) / 2) * h);
+            }
+          });
+        return rect.left === Infinity ? null : rect;
+      };
       Object.assign(window, {
         __sceneInfo: () => ({
           ...this.renderer.info.memory,
@@ -134,7 +179,8 @@ export class SceneEngine {
           built: this.chapterScenes.filter(Boolean).length === this.spans.length && (!this.war || !!this.shatter),
           shatter: this.shatter?.stats,
           frame: { ...this.renderer.info.render },
-          camera: [...this.camera.position.toArray(), ...this.camera.quaternion.toArray()],
+          hero: heroRect(),
+          camera: this.camera.matrixWorld.toArray(),
         }),
         __sceneJump: (progress: number) => (this.target = this.current = progress),
       });
@@ -271,6 +317,9 @@ export class SceneEngine {
     if (this.landscapePhone) {
       this.camera.position.sub(this.look).multiplyScalar(LANDSCAPE_PHONE_BACK).add(this.look);
       this.look.y -= LANDSCAPE_PHONE_DROP;
+    } else if (this.portraitPhone) {
+      this.look.lerp(this.carAt, PORTRAIT_PHONE_TO_CAR);
+      this.camera.position.sub(this.look).multiplyScalar(PORTRAIT_PHONE_BACK).add(this.look);
     }
 
     const war = this.war ? (this.current - this.war.start) / (this.war.end - this.war.start) : 0;
@@ -323,7 +372,9 @@ export class SceneEngine {
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
-    this.landscapePhone = getComputedStyle(this.canvas).getPropertyValue('--landscape-phone').trim() === '1';
+    const style = getComputedStyle(this.canvas);
+    this.landscapePhone = style.getPropertyValue('--landscape-phone').trim() === '1';
+    this.portraitPhone = style.getPropertyValue('--portrait-phone').trim() === '1';
     this.camera.updateProjectionMatrix();
   }
 }
