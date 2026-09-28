@@ -91,13 +91,18 @@ export const ROAD_SIDE = new THREE.Box3(
   new THREE.Vector3(Infinity, Infinity, Infinity),
 );
 
-/** jsdom has no 2D canvas; the halo gradient and the work layer's lettering only need somewhere to draw. */
+/** jsdom has no 2D canvas; the halo gradient, the border signs and the work layer's lettering only need somewhere to draw. */
 export function stubCanvas(): void {
+  const draw = () => undefined;
   const ctx = {
-    createRadialGradient: () => ({ addColorStop: () => undefined }),
-    fillRect: () => undefined,
-    strokeRect: () => undefined,
-    fillText: () => undefined,
+    createRadialGradient: () => ({ addColorStop: draw }),
+    fillRect: draw,
+    strokeRect: draw,
+    fillText: draw,
+    beginPath: draw,
+    lineTo: draw,
+    closePath: draw,
+    fill: draw,
     // Roughly as wide as bold type: 0.55 em per character.
     measureText(this: { font: string }, text: string) {
       return { width: text.length * parseFloat(this.font.split(' ')[1] ?? '10') * 0.55 };

@@ -29,6 +29,10 @@ export const PALETTE = {
   ash: '#3a3a3a',
   soot: '#16171a',
   lastLight: '#fff1d6',
+  /** The escape (#44): the F30's tail-lights, and the blue and gold of the border signs its headlights catch. */
+  tailLight: '#ff3b24',
+  signBlue: '#1f4fa8',
+  signGold: '#ffd43b',
 
   dawnBlue: '#8ecae6',
   steel: '#4d7ea8',

@@ -80,7 +80,7 @@ const TYRE = new THREE.MeshStandardMaterial({ color: '#141414', flatShading: tru
 const HEADLIGHT = new THREE.MeshStandardMaterial({ color: '#fff4d6', emissive: '#fff4d6', emissiveIntensity: 1.5 });
 const TAILLIGHT = new THREE.MeshStandardMaterial({ color: '#ff2a1a', emissive: '#ff2a1a', emissiveIntensity: 1.5 });
 
-/** Builds a car as a group; its parts are named (wheels as `wheel`) so the rig can spin and the rebuild assemble them. */
+/** Builds a car as a group; its parts are named (wheels as `wheel`) so the rig can spin them. */
 export function buildCar(carId: CarId): THREE.Group {
   const model = MODELS[carId];
   const body = new THREE.MeshStandardMaterial({

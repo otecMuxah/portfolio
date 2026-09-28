@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { chapterSpans } from '../journey/journey';
+import { DAWN, DRIVE, driveProgress } from './escape';
 import { GRADE_UNIFORMS, dawnAt, gradeAt, gradeColor, graded } from './grade';
 
 const spans = chapterSpans();
@@ -35,17 +36,24 @@ describe('gradeAt', () => {
     expect(gradeAt(at('war', 0.999))).toEqual({ saturation: 0, exposure: expect.closeTo(0.3) });
   });
 
-  it('brings light and colour back through the rebuild, never down again, to full early in IATA', () => {
-    expect(gradeAt(at('ciklum', 0))).toEqual(gradeAt(at('war', 0.999)));
-    let last = gradeAt(at('ciklum', 0));
-    for (let i = 1; i <= 100; i++) {
-      const g = gradeAt(at('ciklum', 0) + (1 - at('ciklum', 0)) * (i / 100));
+  it('holds the night on the road out of the war until past Italy', () => {
+    for (const u of [0, 0.3, DAWN]) expect(gradeAt(driveProgress(u))).toEqual(gradeAt(at('war', 0.999)));
+  });
+
+  it('brings light and colour back from the drive through the rebuild, never down again, to full early in IATA', () => {
+    const from = driveProgress(DAWN);
+    let last = gradeAt(from);
+    for (let i = 1; i <= 400; i++) {
+      const g = gradeAt(from + (1 - from) * (i / 400));
       expect(g.saturation).toBeGreaterThanOrEqual(last.saturation);
       expect(g.exposure).toBeGreaterThanOrEqual(last.exposure);
+      // Continuous: no step jumps, the drive hands over into Ciklum without a cut in the light.
+      expect(g.saturation - last.saturation).toBeLessThan(0.02);
+      expect(g.exposure - last.exposure).toBeLessThan(0.02);
       last = g;
     }
-    // Light first, so the new place is seen going up; colour follows it.
-    expect(gradeAt(at('ciklum', 0.4)).exposure).toBeCloseTo(1);
+    // Light first, full as the car arrives, so the new place is seen going up; colour follows it.
+    expect(gradeAt(DRIVE.to).exposure).toBeCloseTo(1);
     expect(gradeAt(at('ciklum', 0.5)).saturation).toBeGreaterThan(0.3);
     expect(gradeAt(at('ciklum', 0.5)).saturation).toBeLessThan(0.9);
     expect(gradeAt(at('iata', 0.25))).toEqual({ saturation: 1, exposure: 1 });
@@ -64,8 +72,8 @@ describe('gradeAt', () => {
 });
 
 describe('dawnAt', () => {
-  it('keeps the night until the war is over, then turns the sky to dawn by IATA, the same way back', () => {
-    for (const p of [0, at('back-home', 0.5), at('war', 0.5), at('ciklum', 0)]) expect(dawnAt(p)).toBe(0);
+  it('keeps the night until the road out of the war is past Italy, then turns the sky to dawn by IATA, the same way back', () => {
+    for (const p of [0, at('back-home', 0.5), at('war', 0.5), at('ciklum', 0), driveProgress(DAWN)]) expect(dawnAt(p)).toBe(0);
     expect(dawnAt(at('ciklum', 0.5))).toBeGreaterThan(0);
     expect(dawnAt(at('ciklum', 0.5))).toBeLessThan(1);
     for (const p of [at('iata', 0.25), at('iata', 0.9), 1]) expect(dawnAt(p)).toBe(1);
