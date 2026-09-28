@@ -14,6 +14,13 @@ import { Road } from './road';
 import { Shatter, shakeAt } from './shatter';
 
 const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
+/**
+ * On a phone held sideways the screen is short and the card folds along its foot, so the camera, the road's and the
+ * chase's alike, stands this much further from what it looks at, and looks this far lower, lifting the subject and the
+ * car above the card.
+ */
+const LANDSCAPE_PHONE_BACK = 1.3;
+const LANDSCAPE_PHONE_DROP = 3;
 const NIGHT = new THREE.Color(PALETTE.night);
 const DAWN_SKY = new THREE.Color(PALETTE.dawnSky);
 
@@ -51,6 +58,8 @@ export class SceneEngine {
   private target = 0;
   private disposed = false;
   private current = 0;
+  /** Set from app.scss, which owns the phone breakpoints. */
+  private landscapePhone = false;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -246,6 +255,11 @@ export class SceneEngine {
     this.carRig.update(journeyAt(this.current).carId, this.carAt, this.tangent, time, rider.arrival);
     this.rider.update(rider, this.current, this.carAt, this.tangent, time);
 
+    if (this.landscapePhone) {
+      this.camera.position.sub(this.look).multiplyScalar(LANDSCAPE_PHONE_BACK).add(this.look);
+      this.look.y -= LANDSCAPE_PHONE_DROP;
+    }
+
     const war = this.war ? (this.current - this.war.start) / (this.war.end - this.war.start) : 0;
     const roll = shakeAt(war, this.shake);
     this.camera.position.add(this.shake);
@@ -284,6 +298,7 @@ export class SceneEngine {
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
+    this.landscapePhone = getComputedStyle(this.canvas).getPropertyValue('--landscape-phone').trim() === '1';
     this.camera.updateProjectionMatrix();
   }
 }
