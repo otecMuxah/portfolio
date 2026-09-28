@@ -94,3 +94,33 @@ test('arrow and page keys move between chapters; Tab reaches timeline items', as
   await page.keyboard.press('Enter');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'school');
 });
+
+test('arrow and page keys stay with text fields and open dialogs', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
+
+  await page.evaluate(() => {
+    const input = document.body.appendChild(document.createElement('input'));
+    input.id = 'field';
+    input.value = 'abc';
+    input.style.cssText = 'position: fixed; top: 0; left: 0';
+  });
+  const field = page.locator('#field');
+  await field.focus();
+  await field.evaluate((el: HTMLInputElement) => el.setSelectionRange(3, 3));
+  await field.press('ArrowLeft');
+  expect(await field.evaluate((el: HTMLInputElement) => el.selectionStart)).toBe(2);
+  await page.waitForTimeout(500);
+  await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
+
+  await page.evaluate(() => {
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    dialog.style.cssText = 'height: 200px; overflow: auto';
+    dialog.textContent = 'CV '.repeat(2000);
+    dialog.showModal();
+  });
+  await page.keyboard.press('PageDown');
+  await page.waitForTimeout(500);
+  await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
+  expect(await page.locator('dialog').evaluate((d) => d.scrollTop)).toBeGreaterThan(0);
+});

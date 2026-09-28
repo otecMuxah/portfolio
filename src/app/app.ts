@@ -13,6 +13,10 @@ const SPANS = chapterSpans();
 const TEXT = CHAPTER_TEXT.en;
 const NEXT_KEYS = ['ArrowDown', 'ArrowRight', 'PageDown'];
 const PREV_KEYS = ['ArrowUp', 'ArrowLeft', 'PageUp'];
+/** Keys pressed here belong to the control or dialog, not the journey. */
+const KEEPS_KEYS = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), dialog';
+/** How long a jump target counts for repeated key presses, where `scrollend` never fires. */
+const PENDING_MS = 1500;
 
 const sameState = (a: JourneyState, b: JourneyState) =>
   a.chapterId === b.chapterId && a.carId === b.carId && a.phase === b.phase;
@@ -36,6 +40,7 @@ const isChapterId = (id: string): id is ChapterId => CHAPTERS.some((c) => c.id =
 export class App {
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private readonly track = viewChild.required<ElementRef<HTMLElement>>('track');
+  private readonly nav = viewChild.required<ElementRef<HTMLElement>>('nav');
 
   protected readonly state = signal<JourneyState>(journeyAt(0), { equal: sameState });
   protected readonly chapter = computed(() => CHAPTERS.find((c) => c.id === this.state().chapterId)!);
@@ -48,6 +53,7 @@ export class App {
 
   /** Chapter a keyboard or timeline jump is flying to, so repeated key presses keep counting from it. */
   private pending: number | null = null;
+  private pendingUntil = 0;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -62,7 +68,10 @@ export class App {
           const previous = this.state().chapterId;
           this.state.set(journeyAt(progress));
           const { chapterId } = this.state();
-          if (chapterId !== previous) history.replaceState(null, '', `#${chapterId}`);
+          if (chapterId !== previous) {
+            history.replaceState(null, '', `#${chapterId}`);
+            this.revealInTimeline(this.indexOf(chapterId));
+          }
           if (this.pending === this.indexOf(chapterId)) this.pending = null;
         },
       });
@@ -93,8 +102,12 @@ export class App {
   protected onKey(event: KeyboardEvent): void {
     const step = NEXT_KEYS.includes(event.key) ? 1 : PREV_KEYS.includes(event.key) ? -1 : 0;
     if (!step || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest(KEEPS_KEYS)) return;
+    if (document.querySelector('dialog[open]')) return;
     event.preventDefault();
-    const from = this.pending ?? this.indexOf(this.state().chapterId);
+    const pending = performance.now() < this.pendingUntil ? this.pending : null;
+    const from = pending ?? this.indexOf(this.state().chapterId);
     const to = Math.min(Math.max(from + step, 0), CHAPTERS.length - 1);
     this.flyTo(CHAPTERS[to].id);
   }
@@ -105,7 +118,20 @@ export class App {
     const { start, end } = SPANS[index];
     const max = document.documentElement.scrollHeight - innerHeight;
     this.pending = index;
+    this.pendingUntil = performance.now() + PENDING_MS;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) behavior = 'instant';
     scrollTo({ top: (max * (start + end)) / 2, behavior });
+  }
+
+  /** Keep the current item visible where the timeline scrolls sideways (phones), without scrolling the page. */
+  private revealInTimeline(index: number): void {
+    const nav = this.nav().nativeElement;
+    const item = nav.querySelectorAll('.timeline__item')[index];
+    if (!item) return;
+    const box = nav.getBoundingClientRect();
+    const { left, right } = item.getBoundingClientRect();
+    if (left < box.left) nav.scrollLeft += left - box.left;
+    else if (right > box.right) nav.scrollLeft += right - box.right;
   }
 
   private indexOf(id: ChapterId): number {

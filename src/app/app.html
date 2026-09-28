@@ -3,7 +3,7 @@
 <button type="button" class="skip-cv" (click)="cv.open()">Skip to CV</button>
 <app-cv-view #cv />
 
-<nav class="timeline" aria-label="Timeline">
+<nav #nav class="timeline" aria-label="Timeline">
   <ol class="timeline__list">
     @for (item of timeline; track item.id) {
       <li>
