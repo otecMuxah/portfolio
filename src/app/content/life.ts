@@ -101,7 +101,7 @@ export const CHAPTERS: Chapter[] = [
   { id: 'krakow', year: 2021, phase: 'build', scene: 'krakow' },
   { id: 'back-home', year: 2022, phase: 'build', scene: 'back-home' },
   { id: 'war', year: 2022, phase: 'shatter', scene: 'war', scrollWeight: 3 },
-  { id: 'ciklum', year: 2022, yearEnd: 2024, phase: 'rebuild', scene: 'ciklum', scrollWeight: 2 },
+  { id: 'ciklum', year: 2022, yearEnd: 2024, phase: 'rebuild', scene: 'ciklum', scrollWeight: 2.4 },
   { id: 'iata', year: 2024, yearEnd: 'now', phase: 'rebuild', scene: 'iata' },
   { id: 'garage', phase: 'garage', scene: 'garage' },
 ];

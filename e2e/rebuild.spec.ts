@@ -117,7 +117,10 @@ test('the rebuild goes up by scroll and scrolling back returns the war exactly a
   const budget: Record<string, SceneInfo['frame']> = {};
   const stops: [string, number][] = [
     ['ciklum', 0.1],
+    ['ciklum', 0.3],
     ['ciklum', 0.5],
+    ['ciklum', 0.6],
+    ['ciklum', 0.75],
     ['ciklum', 0.9],
     ['iata', 0.2],
     ['iata', 0.5],
@@ -126,17 +129,18 @@ test('the rebuild goes up by scroll and scrolling back returns the war exactly a
   ];
   const shots: Buffer[] = [];
   for (const [i, [id, local]] of stops.entries()) {
-    shots.push(await shoot(page, at(id, local), `0${i + 2}-${id}-${Math.round(local * 100)}`));
+    shots.push(await shoot(page, at(id, local), `${String(i + 2).padStart(2, '0')}-${id}-${Math.round(local * 100)}`));
     await expect(page.locator(root)).toHaveAttribute('data-chapter', id);
     budget[`${id} ${local}`] = (await sceneInfo(page)).frame;
   }
   // Something new stands where the war left only a light, and IATA is a different place again.
-  expect(await pixelDiff(page, warEnd, shots[1])).toBeGreaterThan(0.05);
-  expect(await pixelDiff(page, shots[1], shots[4])).toBeGreaterThan(0.05);
+  const shot = (id: string, local: number) => shots[stops.findIndex(([i, l]) => i === id && l === local)];
+  expect(await pixelDiff(page, warEnd, shot('ciklum', 0.5))).toBeGreaterThan(0.05);
+  expect(await pixelDiff(page, shot('ciklum', 0.5), shot('iata', 0.5))).toBeGreaterThan(0.05);
 
   // Back down through the rebuild, a step at a time, to the war's end.
   for (const [id, local] of [...stops].reverse()) await snapTo(page, at(id, local));
-  const reversed = await shoot(page, at('war', 0.999), '10-war-end-reversed');
+  const reversed = await shoot(page, at('war', 0.999), `${stops.length + 2}-war-end-reversed`);
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'shatter');
   expect(await pixelDiff(page, warEnd, reversed)).toBeLessThan(0.02);
 

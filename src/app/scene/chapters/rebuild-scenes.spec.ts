@@ -32,7 +32,7 @@ describe('rebuild scenes', () => {
   it('Ciklum starts from nothing and goes up piece by piece as the scroll goes on', () => {
     expect(standing('ciklum', 0)).toBe(0);
     let last = 0;
-    for (const local of [0.3, 0.5, 0.7, 0.9]) {
+    for (const local of [0.2, 0.3, 0.4, 0.5, 0.6]) {
       const n = standing('ciklum', local);
       expect(n).toBeGreaterThan(last);
       last = n;

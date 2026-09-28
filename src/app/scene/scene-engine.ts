@@ -24,11 +24,6 @@ const CAR_OFFSET = new THREE.Vector3(12, 0, 2);
  */
 const WAR_PARK = 0.12;
 const WAR_STOP = 0.3;
-/**
- * The chapter after the war is framed this share of the way in rather than at its middle: the camera glides the long
- * road from the park from the war's end, while the F30 assembles, instead of rushing it in half a chapter.
- */
-const REBUILD_FRAME = 0.6;
 const NIGHT = new THREE.Color(PALETTE.night);
 const DAWN_SKY = new THREE.Color(PALETTE.dawnSky);
 
@@ -40,7 +35,7 @@ function roadStops(spans: ChapterSpan[]): [progress: number, at: number][] {
           [start + WAR_STOP * (end - start), index - 1 + WAR_PARK],
           [end, index - 1 + WAR_PARK],
         ]
-      : [[start + (spans[index - 1]?.chapter.phase === 'shatter' ? REBUILD_FRAME : 0.5) * (end - start), index]],
+      : [[(start + end) / 2, index]],
   );
 }
 

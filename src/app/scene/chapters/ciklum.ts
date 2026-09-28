@@ -1,24 +1,76 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Assembly, Piece, pieceMaterial, unit } from '../art/assembly';
 import { block, halo, leave, lowPoly, mergedMesh, smoothstep } from '../art/kit';
 import { PALETTE } from '../art/palette';
 import { ChapterBuilder } from '../chapter-scene';
 
-/** The assembly runs over this stretch of the chapter, after the F30 (rebuild.ts) and while the camera glides in. */
-const BUILD_FROM = 0.15;
-const BUILD_TO = 0.87;
+/**
+ * The assembly runs over this stretch of the chapter, while the camera glides in: the tower stands by the time the
+ * camera stops (0.5), with the crane still setting the low block, and all of it is done well before the camera leaves.
+ */
+const BUILD_FROM = 0.12;
+const BUILD_TO = 0.66;
 
-/** The tower: slab-and-glass floors, each turned a little further than the one below. */
+/**
+ * The tower: three glass sections of three floors each, lined with light mullions and transoms, each section turned
+ * further than the one below on a thin slab.
+ */
 const TOWER = new THREE.Vector3(-2.4, 0, -3.6);
-const FLOORS = 9;
+const SECTIONS = 3;
+const SECTION_FLOORS = 3;
 const FLOOR = 1.05;
-const SLAB = 0.14;
-const TWIST = 0.075;
-/** The low block beside it: glass bars stacked askew, cantilevering over each other. */
-const BARS = new THREE.Vector3(4.6, 0, -5.8);
+const SLAB = 0.08;
+const TWIST = 0.2;
+/**
+ * The low block, front left of the tower: glass bars stacked askew, cantilevering over each other. Off the side the
+ * camera leaves by (toward +x, -z), so nothing crowds it on the way out.
+ */
+const BARS = new THREE.Vector3(-5.2, 0, 3.6);
 const BAR = 1.38;
 /** Metres a floor is lowered from. */
 const DROP = 2.5;
+
+/** Brightness of the mullions against the glass they stand on (vertex colour, times the piece's own). */
+const MULLION = 2.4;
+
+/**
+ * A unit glass section `floors` high: the pane box lined with thin light mullions at its corners and down each face,
+ * and a transom at each floor, so it reads as curtain wall rather than a solid block.
+ */
+function glassSection(floors: number): THREE.BufferGeometry {
+  const parts: [THREE.BufferGeometry, number][] = [[new THREE.BoxGeometry(1, 1, 1), 1]];
+  for (let f = 1; f < floors; f++) {
+    const y = f / floors - 0.5;
+    parts.push(
+      [new THREE.BoxGeometry(1.02, 0.02, 0.02).translate(0, y, 0.5), MULLION],
+      [new THREE.BoxGeometry(1.02, 0.02, 0.02).translate(0, y, -0.5), MULLION],
+      [new THREE.BoxGeometry(0.02, 0.02, 1.02).translate(0.5, y, 0), MULLION],
+      [new THREE.BoxGeometry(0.02, 0.02, 1.02).translate(-0.5, y, 0), MULLION],
+    );
+  }
+  for (const [x, z, w, d] of [
+    [0.5, 0.5, 0.05, 0.05],
+    [-0.5, 0.5, 0.05, 0.05],
+    [0.5, -0.5, 0.05, 0.05],
+    [-0.5, -0.5, 0.05, 0.05],
+    [0, 0.5, 0.025, 0.03],
+    [0, -0.5, 0.025, 0.03],
+    [0.5, 0, 0.03, 0.025],
+    [-0.5, 0, 0.03, 0.025],
+  ]) {
+    parts.push([new THREE.BoxGeometry(w, 1, d).translate(x, 0, z), MULLION]);
+  }
+  const flat = parts.map(([g, c]) => {
+    const f = g.toNonIndexed().deleteAttribute('uv');
+    f.setAttribute('color', new THREE.Float32BufferAttribute(new Array(f.getAttribute('position').count * 3).fill(c), 3));
+    g.dispose();
+    return f;
+  });
+  const merged = mergeGeometries(flat);
+  flat.forEach((g) => g.dispose());
+  return unit(merged);
+}
 
 /** The tower crane: mast at the plaza's back left, jib at JIB m, clear of the tower's top and every lowered block. */
 const MAST = new THREE.Vector3(-8, 0, -2.5);
@@ -27,39 +79,48 @@ const JIB_LENGTH = 14;
 
 /**
  * 2022–2024, Ciklum: starting from scratch in Germany. Out of the dark a new place goes up block by block on a cool
- * blue plaza: a slender glass tower whose floors turn as they rise, a low block of glass bars stacked askew, and the
+ * blue plaza: a slender glass tower whose sections turn as they rise, a low block of glass bars stacked askew, and the
  * crane that lowers every piece. New architecture, cleaner and cooler than the city that broke; not the old one
  * restored. The crane is the one warm thing here: dawnGold, the journey's first colour, coming back.
  */
 export const ciklum: ChapterBuilder = () => {
   const object = new THREE.Group();
   const box = unit(new THREE.BoxGeometry());
+  const section = glassSection(SECTION_FLOORS);
+  const pane = glassSection(1);
   const solid = pieceMaterial();
-  const glass = pieceMaterial({ roughness: 0.3, metalness: 0.1, emissive: PALETTE.dawnBlue, emissiveIntensity: 0 });
+  // Cool blue glass that keeps its light while the colour is still coming back: lit from within as the place fills.
+  const glass = pieceMaterial({ vertexColors: true, roughness: 0.25, metalness: 0.15, emissive: PALETTE.dawnBlue, emissiveIntensity: 0 });
 
-  const pieces: Piece[] = [{ shape: box, material: solid, colour: 'steel', at: [-0.5, -0.25, -3.8], size: [15, 0.25, 9] }];
-  for (let i = 0; i < FLOORS; i++) {
-    const y = i * FLOOR;
+  // The plaza: the tower's ground, and a wing out front for the low block.
+  const pieces: Piece[] = [
+    { shape: box, material: solid, colour: 'steel', at: [-0.5, -0.25, -3.8], size: [15, 0.25, 9] },
+    { shape: box, material: solid, colour: 'steel', at: [-4.6, -0.25, 3.4], size: [7.6, 0.25, 5.4] },
+  ];
+  const height = SECTION_FLOORS * FLOOR;
+  for (let i = 0; i < SECTIONS; i++) {
+    const y = i * height;
     const turn = i * TWIST;
     pieces.push(
-      { shape: box, material: solid, colour: 'chalk', at: [TOWER.x, y, TOWER.z], size: [4.1, SLAB, 4.1], turn, drop: DROP },
-      { shape: box, material: glass, colour: 'glass', at: [TOWER.x, y + SLAB, TOWER.z], size: [3.9, FLOOR - SLAB, 3.9], turn, drop: DROP },
+      { shape: box, material: solid, colour: 'chalk', at: [TOWER.x, y, TOWER.z], size: [4.05, SLAB, 4.05], turn, drop: DROP },
+      { shape: section, material: glass, colour: 'steel', at: [TOWER.x, y + SLAB, TOWER.z], size: [3.9, height - SLAB, 3.9], turn, drop: DROP },
     );
   }
-  const top = FLOORS * FLOOR;
+  const top = SECTIONS * height;
+  const crown = (SECTIONS - 1) * TWIST;
   pieces.push(
-    { shape: box, material: solid, colour: 'chalk', at: [TOWER.x, top, TOWER.z], size: [4.1, 0.2, 4.1], turn: FLOORS * TWIST, drop: 1.5 },
-    { shape: box, material: glass, colour: 'dawnBlue', at: [TOWER.x, top + 0.2, TOWER.z], size: [2.2, 1, 2.2], turn: FLOORS * TWIST, drop: 0.8 },
+    { shape: box, material: solid, colour: 'chalk', at: [TOWER.x, top, TOWER.z], size: [4.05, 0.14, 4.05], turn: crown, drop: 1.5 },
+    { shape: pane, material: glass, colour: 'glass', at: [TOWER.x, top + 0.14, TOWER.z], size: [2.2, 1, 2.2], turn: crown, drop: 0.8 },
   );
   for (let j = 0; j < 4; j++) {
-    const x = BARS.x + (j % 2 ? 0.8 : -0.4);
+    const x = BARS.x + (j % 2 ? 0.6 : -0.3);
     const turn = j % 2 ? 0.1 : -0.06;
     pieces.push(
-      { shape: box, material: solid, colour: 'chalk', at: [x, j * BAR, BARS.z], size: [5.8, 0.18, 3], turn, drop: DROP },
-      { shape: box, material: glass, colour: 'dawnBlue', at: [x, j * BAR + 0.18, BARS.z], size: [5.4, BAR - 0.18, 2.6], turn, drop: DROP },
+      { shape: box, material: solid, colour: 'chalk', at: [x, j * BAR, BARS.z], size: [5, 0.12, 2.8], turn, drop: DROP },
+      { shape: pane, material: glass, colour: 'steel', at: [x, j * BAR + 0.12, BARS.z], size: [4.7, BAR - 0.12, 2.5], turn, drop: DROP },
     );
   }
-  pieces.push({ shape: box, material: solid, colour: 'chalk', at: [BARS.x + 0.8, 4 * BAR, BARS.z], size: [5.8, 0.18, 3], turn: 0.1, drop: DROP });
+  pieces.push({ shape: box, material: solid, colour: 'chalk', at: [BARS.x + 0.6, 4 * BAR, BARS.z], size: [5, 0.12, 2.8], turn: 0.1, drop: DROP });
   const assembly = new Assembly(pieces, 1 / pieces.length, 0.3);
 
   // The crane: a mast that rises with the plaza, and a slewing top (jib, counter-jib, weight, cab, A-frame) above it.
@@ -153,7 +214,7 @@ export const ciklum: ChapterBuilder = () => {
 
       // Lights come on in the glass as the place fills, and the dawn comes up behind it.
       const calm = leave(local);
-      glass.emissiveIntensity = 0.35 * smoothstep(0.3, 1, k) * (1 - 0.4 * calm);
+      glass.emissiveIntensity = (0.1 + 0.25 * smoothstep(0.3, 1, k)) * (1 - 0.4 * calm);
       dawn.visible = k > 0;
       dawn.material.opacity = 0.3 * smoothstep(0, 1, k) * (1 - 0.3 * calm);
     },
