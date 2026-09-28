@@ -119,13 +119,14 @@ test('the world breaks through the war and is whole again when scrolled back', a
 
   const shots: Buffer[] = [];
   const budget: Record<string, SceneInfo['frame']> = {};
-  for (const [i, local] of [0.001, 0.25, 0.5, 0.75, 0.999].entries()) {
+  for (const [i, local] of [0.001, 0.25, 0.5, 0.75, 0.83].entries()) {
     await scrollJourney(page, at('war', local));
     await expect(page.locator(root)).toHaveAttribute('data-phase', 'shatter');
     shots.push(await shoot(page, `0${i + 1}-war-${Math.round(local * 100)}`));
     budget[`war ${local}`] = (await sceneInfo(page)).frame;
   }
-  // The world at the war's start is the world as built; by its middle it has broken; the last stretch is still.
+  // The world at the war's start is the world as built; by its middle it has broken; the stretch
+  // before the drive out (escape.ts) is still.
   expect(await pixelDiff(page, before, shots[2])).toBeGreaterThan(0.05);
   expect(await pixelDiff(page, shots[3], shots[4])).toBeLessThan(0.02);
 

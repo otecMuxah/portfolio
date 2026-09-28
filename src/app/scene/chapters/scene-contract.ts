@@ -90,11 +90,18 @@ export const ROAD_SIDE = new THREE.Box3(
   new THREE.Vector3(Infinity, Infinity, Infinity),
 );
 
-/** jsdom has no 2D canvas; the halo gradient only needs somewhere to draw. */
+/** jsdom has no 2D canvas; the halo gradient and the border signs only need somewhere to draw. */
 export function stubCanvas(): void {
+  const draw = () => undefined;
   const ctx = {
-    createRadialGradient: () => ({ addColorStop: () => undefined }),
-    fillRect: () => undefined,
+    createRadialGradient: () => ({ addColorStop: draw }),
+    fillRect: draw,
+    strokeRect: draw,
+    fillText: draw,
+    beginPath: draw,
+    lineTo: draw,
+    closePath: draw,
+    fill: draw,
   };
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as never);
 }

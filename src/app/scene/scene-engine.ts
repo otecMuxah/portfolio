@@ -6,8 +6,8 @@ import { buildCar } from './cars';
 import { ChapterScene, chapterAnchor } from './chapter-scene';
 import { CHAPTER_BUILDERS } from './chapters';
 import { LIGHT } from './chapters/war';
+import { BENDS, DRIVE, EscapeRoute, chaseAt, chaseCamera, driveAt, fallIn } from './escape';
 import { GRADE_UNIFORMS, dawnAt, gradeAll, gradeAt, gradeColor } from './grade';
-import { f30Assembled } from './rebuild';
 import { RiderRig } from './rider-rig';
 import { Shatter, shakeAt } from './shatter';
 
@@ -64,8 +64,10 @@ export class SceneEngine {
   private readonly stops: [number, number][];
   /** The war chapter's span, and the world breaking in it once every chapter has been built. */
   private readonly war?: ChapterSpan;
-  /** Where the war's last light hangs (world): the F30 assembles out of it. */
-  private readonly lastLight = new THREE.Vector3();
+  /** The road out of the war: the F30 drives it out of the war's last light, and the camera rides behind it. */
+  private readonly route?: EscapeRoute;
+  private readonly chase = new THREE.Vector3();
+  private readonly chaseLook = new THREE.Vector3();
   private shatter?: Shatter;
   private target = 0;
   private disposed = false;
@@ -89,12 +91,16 @@ export class SceneEngine {
     this.path = new THREE.CatmullRomCurve3(this.anchors.map((a) => a.clone().add(CAMERA_OFFSET)));
     this.stops = roadStops(spans);
     this.war = spans.find((s) => s.chapter.phase === 'shatter');
-    if (this.war) this.lastLight.copy(this.anchors[this.war.index]).add(LIGHT);
+    if (this.war) this.route = this.escapeRoute(this.war);
     // Added before load() compiles so the car materials are ready with the first chapter.
     gradeAll(this.carRig.object);
     this.scene.add(this.carRig.object);
     gradeAll(this.rider.object);
     this.scene.add(this.rider.object);
+    if (this.route) {
+      gradeAll(this.route.object);
+      this.scene.add(this.route.object);
+    }
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -177,6 +183,25 @@ export class SceneEngine {
     return shatter;
   }
 
+  /**
+   * The road from the war's last light (on the ground under it) through BENDS to where the car stands on the camera
+   * road when the drive ends, arriving along that road's heading.
+   */
+  private escapeRoute(war: ChapterSpan): EscapeRoute {
+    const anchor = this.anchors[war.index];
+    const light = anchor.clone().add(LIGHT);
+    const t = this.pathT(DRIVE.to);
+    const end = this.path.getPoint(t).sub(CAMERA_OFFSET).add(CAR_OFFSET);
+    const heading = this.path.getTangent(t).setY(0).normalize();
+    const points = [
+      light.clone().setY(0),
+      ...BENDS.map(([x, z]) => new THREE.Vector3(anchor.x + x, 0, anchor.z + z)),
+      end.clone().addScaledVector(heading, -10),
+      end,
+    ];
+    return new EscapeRoute(points, light);
+  }
+
   private build(index: number): THREE.Object3D {
     const { chapter } = this.spans[index];
     const built = CHAPTER_BUILDERS[chapter.scene](chapter, index);
@@ -224,28 +249,38 @@ export class SceneEngine {
     this.camera.position.copy(this.path.getPoint(t));
     this.look.copy(this.camera.position).sub(CAMERA_OFFSET).add(LOOK_OFFSET);
     this.carAt.copy(this.camera.position).sub(CAMERA_OFFSET).add(CAR_OFFSET);
+    this.path.getTangent(t, this.tangent);
+    // The escape: the car drives the road out of the war, and the camera falls in behind it until it arrives.
+    const drive = this.route ? driveAt(this.current) : 0;
+    if (this.route && drive > 0 && drive < 1) {
+      this.route.pose(drive, this.carAt, this.tangent);
+      const chase = chaseAt(drive);
+      if (chase > 0) {
+        chaseCamera(this.carAt, this.tangent, this.chase, this.chaseLook, this.camera.aspect);
+        fallIn(this.carAt, this.camera.position, this.look, this.chase, this.chaseLook, chase);
+      }
+    }
     const rider = riderAt(this.current, this.riderState);
-    this.carRig.update(journeyAt(this.current).carId, this.carAt, this.path.getTangent(t, this.tangent), time, rider.arrival);
+    this.carRig.update(journeyAt(this.current).carId, this.carAt, this.tangent, time, rider.arrival);
     this.rider.update(rider, this.current, this.carAt, this.tangent, time);
 
     const war = this.war ? (this.current - this.war.start) / (this.war.end - this.war.start) : 0;
-    // Whole until the war; after it, assembled anew out of the last light.
-    this.carRig.assemble(war >= 1 ? f30Assembled(this.current) : 1, this.lastLight);
     const roll = shakeAt(war, this.shake);
     this.camera.position.add(this.shake);
     this.camera.lookAt(this.look.add(this.shake));
     this.camera.rotateZ(roll);
     if (this.shatter) {
       // Once the war starts the world built before it, and the car, exist only as shards; after it, not at all. The
-      // car comes back after the war, assembled anew out of the last light.
+      // car comes back late in the war, driving out of the last light.
       const whole = this.shatter.update(war) <= 0;
       for (let i = 0; i < this.spans.length; i++) {
         const built = this.chapterScenes[i];
         if (built && this.spans[i].chapter.phase === 'build') built.object.visible = whole;
       }
-      this.carRig.object.visible = whole || war >= 1;
+      this.carRig.object.visible = whole || drive > 0;
     }
 
+    this.route?.update(this.current, dawnAt(this.current));
     gradeAt(this.current, this.grade);
     GRADE_UNIFORMS.uGradeSaturation.value = this.grade.saturation;
     GRADE_UNIFORMS.uGradeExposure.value = this.grade.exposure;
