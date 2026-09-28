@@ -23,6 +23,63 @@
 
 .track {
   position: relative;
+
+  &--static {
+    padding: 100vh clamp(1rem, 5vw, 4rem) 4rem;
+  }
+}
+
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  color: #f4efe6;
+
+  &--sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  &__item {
+    padding: 1.25rem 1.5rem;
+    border-left: 3px solid #ffb35c;
+    border-radius: 12px;
+    background: rgb(244 239 230 / 6%);
+  }
+
+  &__meta {
+    margin: 0 0 0.25rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  &__title {
+    margin: 0 0 0.5rem;
+    font-size: 1.6rem;
+  }
+
+  &__body {
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  &__flag {
+    margin: 0 0 0.5rem;
+    color: #ff6b5b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
 }
 
 .card {
