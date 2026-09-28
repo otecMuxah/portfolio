@@ -128,13 +128,13 @@ export const EN: Record<ChapterId, ChapterText> = {
   },
   ciklum: {
     label: 'Ciklum',
-    place: 'Germany',
+    place: 'Aschaffenburg, Bavaria',
     title: 'Ciklum: starting from scratch',
     body: 'Rebuilding life and career in Germany. Lead Frontend Developer on Redstor (2022–2023), then Senior Frontend Developer on Deloitte (2023–2024).',
   },
   iata: {
     label: 'IATA',
-    place: 'Frankfurt',
+    place: 'Aschaffenburg, then Frankfurt',
     title: 'IATA',
     body: 'Senior Full-Stack Developer (contract), leading a team of 6 developers within a 50-person engineering organisation. AI-agent delivery across AMSS, ARM Index, ATMPM and ASPAC.',
   },
