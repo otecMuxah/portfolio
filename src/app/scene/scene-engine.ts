@@ -6,13 +6,14 @@ import { ChapterScene } from './chapter-scene';
 import { CHAPTER_BUILDERS } from './chapters';
 
 const CHAPTER_GAP = 40;
-const CAMERA_OFFSET = new THREE.Vector3(0, 6, 18);
+/** The camera travels a road beside the scenes, framing each subject from the front-right (a 3/4 view). */
+const CAMERA_OFFSET = new THREE.Vector3(18, 7, 16);
 const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
 /**
  * Where the car rides relative to the point the camera frames (camera minus CAMERA_OFFSET): at a chapter's
- * midpoint that is the anchor, putting the car in the lane art-direction.md keeps clear (|x| < 3, z 4–14).
+ * midpoint that is the anchor, putting the car on the road outside the scene footprint (art-direction.md).
  */
-const CAR_OFFSET = new THREE.Vector3(2, 0, 6.5);
+const CAR_OFFSET = new THREE.Vector3(12, 0, 2);
 
 /** Owns the Three.js renderer, camera and loop. Runs outside Angular change detection. */
 export class SceneEngine {
@@ -104,6 +105,9 @@ export class SceneEngine {
       if (obj instanceof THREE.Mesh || obj instanceof THREE.Points || obj instanceof THREE.Line) {
         obj.geometry.dispose();
         [obj.material].flat().forEach((m: THREE.Material) => m.dispose());
+      } else if (obj instanceof THREE.Sprite) {
+        obj.material.map?.dispose();
+        obj.material.dispose();
       }
     });
     this.renderer.dispose();
