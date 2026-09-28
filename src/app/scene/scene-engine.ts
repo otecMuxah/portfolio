@@ -27,8 +27,8 @@ const LANDSCAPE_PHONE_DROP = 3;
  * road's and the chase's alike, looks this share of the way toward the car and stands this much further back from
  * that point, holding the car and the scene behind it both in frame above the folded card.
  */
-const PORTRAIT_PHONE_TO_CAR = 0.2;
-const PORTRAIT_PHONE_BACK = 2.4;
+const PORTRAIT_PHONE_TO_CAR = 0.5;
+const PORTRAIT_PHONE_BACK = 1.6;
 const NIGHT = new THREE.Color(PALETTE.night);
 const DAWN_SKY = new THREE.Color(PALETTE.dawnSky);
 
