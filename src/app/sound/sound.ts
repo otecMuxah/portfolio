@@ -25,10 +25,16 @@ export class Sound {
     if (event.target instanceof Element && event.target.closest('[data-sound-toggle]')) return;
     this.start();
   };
+  /** A hidden tab goes quiet; it comes back only if sound is still on. */
+  private readonly onVisibility = () => {
+    if (document.hidden) this.scape?.pause();
+    else if (this.on()) this.scape?.enable();
+  };
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       this.stopWaiting();
+      if (this.scape) document.removeEventListener('visibilitychange', this.onVisibility);
       this.scape?.dispose();
     });
   }
@@ -63,6 +69,7 @@ export class Sound {
   }
 
   private start(): void {
+    if (!this.scape) document.addEventListener('visibilitychange', this.onVisibility);
     this.scape ??= new Soundscape(
       ambientLevel(this.progress, WAR),
       rumbleLevel(this.progress, WAR),

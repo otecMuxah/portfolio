@@ -8,6 +8,7 @@ const toggle = (page: Page) => page.getByRole('button', { name: 'Sound' });
 
 interface AudioSpy {
   contexts: number;
+  context?: AudioContext;
   plays: number;
   gains: GainNode[];
 }
@@ -15,13 +16,14 @@ interface AudioSpy {
 /** Count every way the page could make a sound, and keep the gain nodes it creates in order. */
 async function spyOnAudio(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    const spy = { contexts: 0, plays: 0, gains: [] as GainNode[] };
+    const spy = { contexts: 0, plays: 0, gains: [] as GainNode[], context: undefined as unknown };
     (window as unknown as { audioSpy: typeof spy }).audioSpy = spy;
     const Real = window.AudioContext;
     window.AudioContext = class extends Real {
       constructor(options?: AudioContextOptions) {
         super(options);
         spy.contexts++;
+        spy.context = this;
       }
       override createGain(): GainNode {
         const gain = super.createGain();
@@ -125,6 +127,38 @@ test('the war chapter ducks the ambient under a rumble, then falls silent', asyn
   await expectMix(WAR.back, 'full', 'silent');
   // Scrolling back into the war brings the rumble back.
   await expectMix(at(0.35), 'silent', 'full');
+
+  expect(errors).toEqual([]);
+});
+
+test('a hidden tab suspends the audio, and showing it again resumes only if sound is on', async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await spyOnAudio(page);
+  await visit(page, '/');
+  await toggle(page).click();
+  const state = () =>
+    page.evaluate(() => (window as unknown as { audioSpy: AudioSpy }).audioSpy.context!.state);
+  const setHidden = (hidden: boolean) =>
+    page.evaluate((h) => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => h });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }, hidden);
+
+  await expect.poll(state).toBe('running');
+  await setHidden(true);
+  await expect.poll(state).toBe('suspended');
+  await setHidden(false);
+  await expect.poll(state).toBe('running');
+
+  // Turned off while hidden: coming back stays silent.
+  await setHidden(true);
+  await expect.poll(state).toBe('suspended');
+  await toggle(page).click();
+  await setHidden(false);
+  await page.waitForTimeout(500);
+  expect(await state()).toBe('suspended');
 
   expect(errors).toEqual([]);
 });

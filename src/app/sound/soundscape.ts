@@ -63,6 +63,12 @@ export class Soundscape {
     this.suspendTimer = setTimeout(() => this.ctx.suspend(), SUSPEND_AFTER_MS);
   }
 
+  /** Stop the audio clock while the tab is hidden; enable() picks it up again. */
+  pause(): void {
+    clearTimeout(this.suspendTimer);
+    this.ctx.suspend();
+  }
+
   /** Glide each bus towards its level, 0..1. Only a changed target schedules a ramp. */
   setLevels(ambient: number, rumble: number): void {
     const now = this.ctx.currentTime;
