@@ -70,6 +70,12 @@ export class SceneEngine {
     if (this.disposed) return;
     this.frame();
     this.renderer.setAnimationLoop(() => this.frame());
+    // Dev builds only (stripped from prod): lets e2e read GPU memory and wait for the eased camera to settle.
+    if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+      Object.assign(window, {
+        __sceneInfo: () => ({ ...this.renderer.info.memory, settled: Math.abs(this.target - this.current) < 1e-4 }),
+      });
+    }
     onProgress(1);
     this.buildRest().catch((err) => console.warn('Chapter scenes failed to build', err));
   }
@@ -104,7 +110,10 @@ export class SceneEngine {
     this.scene.traverse((obj) => {
       if (obj instanceof THREE.Mesh || obj instanceof THREE.Points || obj instanceof THREE.Line) {
         obj.geometry.dispose();
-        [obj.material].flat().forEach((m: THREE.Material) => m.dispose());
+        [obj.material].flat().forEach((m: THREE.Material) => {
+          if ('map' in m && m.map instanceof THREE.Texture) m.map.dispose();
+          m.dispose();
+        });
       } else if (obj instanceof THREE.Sprite) {
         obj.material.map?.dispose();
         obj.material.dispose();
