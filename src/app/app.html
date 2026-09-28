@@ -1,6 +1,10 @@
 <canvas #canvas class="scene" aria-hidden="true"></canvas>
 
+<button type="button" class="skip-cv" (click)="cv.open()">Skip to CV</button>
+<app-cv-view #cv />
+
 <main #track class="track" [style.height]="trackHeight">
+  <app-hero />
   <article class="card" aria-live="polite">
     <p class="card__meta">
       {{ chapter().year }}@if (chapter().yearEnd) { – {{ chapter().yearEnd }}} · {{ chapter().place }}

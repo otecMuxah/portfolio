@@ -2,6 +2,8 @@ import { Component, DestroyRef, ElementRef, afterNextRender, computed, inject, s
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CHAPTERS } from './content/life';
+import { CvView } from './cv/cv-view';
+import { Hero } from './hero/hero';
 import { JourneyState, chapterSpans, journeyAt } from './journey/journey';
 import { SceneEngine } from './scene/scene-engine';
 
@@ -12,6 +14,7 @@ const sameState = (a: JourneyState, b: JourneyState) =>
 
 @Component({
   selector: 'app-root',
+  imports: [Hero, CvView],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   host: {

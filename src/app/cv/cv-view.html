@@ -1,0 +1,57 @@
+<dialog #dialog class="cv" aria-labelledby="cv-title">
+  <header class="cv__header">
+    <h2 id="cv-title" class="cv__title">CV</h2>
+    <p class="cv__name">{{ profile.name }}</p>
+    <p class="cv__role">{{ profile.title }} · {{ profile.stack }}</p>
+    <p class="cv__meta">{{ profile.location }} · {{ profile.languages }}</p>
+    <ul class="cv__contacts" aria-label="Contact">
+      @for (c of contacts; track c.label) {
+        <li>
+          {{ c.label }}:
+          <a
+            [href]="c.href"
+            rel="noopener"
+            [attr.target]="c.href.startsWith('http') ? '_blank' : null"
+            >{{ c.text }}</a
+          >
+        </li>
+      }
+    </ul>
+    <button type="button" class="cv__close" (click)="close()">Close</button>
+  </header>
+
+  <p>{{ summary }}</p>
+
+  <h3>Experience</h3>
+  @for (role of roles; track role.company) {
+    <section class="cv__job">
+      <h4 class="cv__job-title">{{ role.title }} · {{ role.company }}</h4>
+      <p class="cv__meta">
+        <span>{{ role.dates }}</span> · {{ role.location }}
+        @if (role.note) {
+          · {{ role.note }}
+        }
+      </p>
+      <ul>
+        @for (h of role.highlights; track h) {
+          <li>{{ h }}</li>
+        }
+      </ul>
+    </section>
+  }
+
+  <h3>Skills</h3>
+  <dl class="cv__skills">
+    @for (s of skills; track s.area) {
+      <dt>{{ s.area }}</dt>
+      <dd>{{ s.items }}</dd>
+    }
+  </dl>
+
+  <h3>Education &amp; certifications</h3>
+  <ul>
+    @for (e of education; track e) {
+      <li>{{ e }}</li>
+    }
+  </ul>
+</dialog>

@@ -1,0 +1,79 @@
+.cv {
+  width: min(56rem, 100% - 2rem);
+  max-height: calc(100vh - 2rem);
+  box-sizing: border-box;
+  padding: 2rem clamp(1rem, 4vw, 2.5rem);
+  border: 0;
+  border-radius: 12px;
+  background: #f4efe6;
+  color: #1a1c22;
+  line-height: 1.5;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  &::backdrop {
+    background: rgb(13 15 20 / 80%);
+  }
+
+  &__header {
+    position: relative;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  &__name {
+    margin: 0.25rem 0 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+
+  &__role {
+    margin: 0.25rem 0;
+    font-size: 1.1rem;
+  }
+
+  &__meta {
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+    opacity: 0.75;
+  }
+
+  &__contacts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__close {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+
+  &__job-title {
+    margin: 1.25rem 0 0.25rem;
+    font-size: 1.05rem;
+  }
+
+  &__skills dt {
+    margin-top: 0.5rem;
+    font-weight: 700;
+  }
+
+  &__skills dd {
+    margin: 0;
+  }
+
+  a {
+    color: #8a3b12;
+  }
+}
