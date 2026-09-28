@@ -1,11 +1,14 @@
 import * as THREE from 'three';
-import { ChapterSpan, spanAt } from '../journey/journey';
+import { ChapterSpan, journeyAt, spanAt } from '../journey/journey';
+import { CarRig } from './car-rig';
 import { ChapterScene } from './chapter-scene';
 import { CHAPTER_BUILDERS } from './chapters';
 
 const CHAPTER_GAP = 40;
 const CAMERA_OFFSET = new THREE.Vector3(0, 6, 18);
 const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
+/** Where the car rides relative to the camera's chapter anchor: ahead of the camera, beside the chapter's scene. */
+const CAR_OFFSET = new THREE.Vector3(4.5, 0, 5);
 
 /** Owns the Three.js renderer, camera and loop. Runs outside Angular change detection. */
 export class SceneEngine {
@@ -16,6 +19,7 @@ export class SceneEngine {
   private readonly resizeObserver: ResizeObserver;
   private readonly chapterScenes: ChapterScene[];
   private readonly clock = new THREE.Timer();
+  private readonly carRig = new CarRig();
   private target = 0;
   private current = 0;
 
@@ -37,6 +41,7 @@ export class SceneEngine {
       return built;
     });
     this.path = new THREE.CatmullRomCurve3(anchors.map((a) => a.clone().add(CAMERA_OFFSET)));
+    this.scene.add(this.carRig.object);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -72,6 +77,8 @@ export class SceneEngine {
     const t = this.pathT(this.current);
     this.camera.position.copy(this.path.getPoint(t));
     this.camera.lookAt(this.camera.position.clone().sub(CAMERA_OFFSET).add(LOOK_OFFSET));
+    const carAt = this.camera.position.clone().sub(CAMERA_OFFSET).add(CAR_OFFSET);
+    this.carRig.update(journeyAt(this.current).carId, carAt, this.path.getTangent(t), time);
     this.renderer.render(this.scene, this.camera);
   }
 

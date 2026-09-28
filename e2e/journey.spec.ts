@@ -20,7 +20,7 @@ test('scrolling walks the visitor through each chapter in order', async ({ page 
   await expect(page.getByRole('heading', { name: 'Born in Kharkiv' })).toBeVisible();
   await expect(page.locator(root)).toHaveAttribute('data-car', 'none');
 
-  await scrollJourney(page, 0.5);
+  await scrollJourney(page, 0.7);
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'first-code');
   await expect(page.getByRole('heading', { name: 'Self-taught, first job' })).toBeVisible();
   await expect(page.locator(root)).toHaveAttribute('data-car', 'forester');
