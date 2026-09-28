@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ChapterSpan, spanAt } from '../journey/journey';
+import { PALETTE } from './art/palette';
 import { ChapterScene } from './chapter-scene';
 import { CHAPTER_BUILDERS } from './chapters';
 
@@ -25,9 +26,13 @@ export class SceneEngine {
   ) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.scene.background = new THREE.Color('#0d0f14');
-    this.scene.fog = new THREE.Fog('#0d0f14', 20, 90);
-    this.scene.add(new THREE.HemisphereLight('#ffe8c7', '#1a1d26', 2));
+    this.scene.background = new THREE.Color(PALETTE.night);
+    this.scene.fog = new THREE.Fog(PALETTE.night, 20, 90);
+    this.scene.add(new THREE.HemisphereLight(PALETTE.sky, PALETTE.ground, 1.2));
+    // A low key light from the upper left gives flat-shaded facets readable contrast.
+    const sun = new THREE.DirectionalLight(PALETTE.sun, 2);
+    sun.position.set(-20, 30, 15);
+    this.scene.add(sun);
 
     const anchors = spans.map((_, i) => new THREE.Vector3(Math.sin(i) * 12, 0, -i * CHAPTER_GAP));
     this.chapterScenes = spans.map(({ chapter }, i) => {
