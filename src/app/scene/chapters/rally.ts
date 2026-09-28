@@ -1,16 +1,14 @@
 import * as THREE from 'three';
 import { PALETTE } from '../art/palette';
 import { enter, glow, haloMap, leave, lowPoly, mergedMesh, seeded, smoothstep } from '../art/kit';
-import { ChapterBuilder } from '../chapter-scene';
+import { ChapterBuilder, chapterAnchor } from '../chapter-scene';
 
 /** Where the engine's car rides at the chapter midpoint: the anchor plus CAR_OFFSET (scene-engine.ts). */
 const CAR_AT_MID = new THREE.Vector3(12, 0, 2);
-/** The camera path runs 40 m per chapter along -z. */
-const CHAPTER_GAP = 40;
 const ROAD_HALF_WIDTH = 3.5;
 /** The dust starts behind the rear bumper, so it never swallows the car. */
 const BUMPER = 2.4;
-const PUFFS = 72;
+const PUFFS = 110;
 const SPRAY = 700;
 const HAZE = 500;
 
@@ -23,11 +21,14 @@ export const rally: ChapterBuilder = (_chapter, index) => {
   const random = seeded(8);
   const object = new THREE.Group();
 
-  // The road bends with the path (anchors 40 m apart, swaying sin(i)·12 m across); within one chapter
-  // it is near straight, so the stage is laid along the chord through the neighbouring anchors.
-  const heading = new THREE.Vector3((Math.sin(index + 1) - Math.sin(index - 1)) * 12, 0, -2 * CHAPTER_GAP).normalize();
+  // The road bends with the path through the chapter anchors; within one chapter it is near straight,
+  // so the stage is laid along the chord through the neighbouring anchors.
+  const chord = chapterAnchor(index + 1).sub(chapterAnchor(index - 1));
+  /** How far the car travels across one chapter's span. */
+  const stride = chord.length() / 2;
+  const heading = chord.normalize();
   /** Along-lane distance of the car from its midpoint position, at a local progress. */
-  const carAlong = (local: number) => ((local - 0.5) * CHAPTER_GAP) / -heading.z;
+  const carAlong = (local: number) => (local - 0.5) * stride;
 
   // The lane frame: x runs with the car, z points from the scene out across the road.
   const lane = new THREE.Group();
@@ -48,8 +49,8 @@ export const rally: ChapterBuilder = (_chapter, index) => {
   const roadEnd = carAlong(1.25);
   const road = new THREE.Group();
   road.name = 'stage-road';
-  road.add(strip(roadStart, roadEnd, -ROAD_HALF_WIDTH, ROAD_HALF_WIDTH, 0.03, 0.5, random, lowPoly('wheat')));
-  for (const z of [-0.8, 0.8]) road.add(strip(roadStart, roadEnd, z - 0.3, z + 0.3, 0.05, 0.1, random, lowPoly('brass')));
+  road.add(strip(roadStart, roadEnd, -ROAD_HALF_WIDTH, ROAD_HALF_WIDTH, 0.03, 0.5, random, lowPoly('gravel')));
+  for (const z of [-0.8, 0.8]) road.add(strip(roadStart, roadEnd, z - 0.3, z + 0.3, 0.05, 0.1, random, lowPoly('concrete')));
   lane.add(road);
 
   // A gravel berm along the scene side of the road, then the spectator tape.
@@ -161,10 +162,10 @@ export const rally: ChapterBuilder = (_chapter, index) => {
     color: PALETTE.wheat,
     // Lit from within a little, so the shaded underside reads as dust rather than rock.
     emissive: PALETTE.wheat,
-    emissiveIntensity: 0.35,
+    emissiveIntensity: 0.6,
     flatShading: true,
     transparent: true,
-    opacity: 0.5,
+    opacity: 0.3,
     depthWrite: false,
   });
   const puffs = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), dustMaterial, PUFFS);
@@ -177,10 +178,10 @@ export const rally: ChapterBuilder = (_chapter, index) => {
     return {
       along: dustFrom + ((dustTo - dustFrom) * (i + random() * 0.8)) / PUFFS,
       side: side * (0.75 + random() * 0.2),
-      drift: side * (0.4 + random() * 1.4),
-      rise: 0.6 + random() * 1.8,
-      size: 0.4 + random() * 0.6,
-      life: 8 + random() * 8,
+      drift: side * (0.2 + random() * 0.7),
+      rise: 0.4 + random() * 1.1,
+      size: 0.45 + random() * 0.35,
+      life: 3 + random() * 4,
       spin: random() * Math.PI,
       phase: random() * Math.PI * 2,
     };
@@ -236,7 +237,7 @@ export const rally: ChapterBuilder = (_chapter, index) => {
         const age = car - p.along - BUMPER;
         const t = age / p.life;
         let size = 0;
-        if (t > 0 && t < 1) size = p.size * (0.35 + 0.65 * smoothstep(0, 0.2, t)) * (1 - smoothstep(0.55, 1, t));
+        if (t > 0 && t < 1) size = p.size * (0.5 + 0.5 * smoothstep(0, 0.15, t)) * (1 - smoothstep(0.3, 1, t));
         const settle = 1 - Math.exp(-age / 6);
         const wobble = Math.sin(time * 0.6 + p.phase) * 0.12;
         position.set(p.along + age * 0.08, 0.35 + p.rise * settle + wobble, p.side + p.drift * settle);

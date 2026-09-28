@@ -20,6 +20,7 @@ export const PALETTE = {
   terminal: '#5dff9e',
   terracotta: '#e07a5f',
   wheat: '#f2cc8f',
+  gravel: '#77736b',
   krakowRoof: '#6aa391',
   krakowBrick: '#b5484b',
   homeWarm: '#ff9f45',

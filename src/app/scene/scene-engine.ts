@@ -2,10 +2,9 @@ import * as THREE from 'three';
 import { ChapterSpan, journeyAt, spanAt } from '../journey/journey';
 import { PALETTE } from './art/palette';
 import { CarRig } from './car-rig';
-import { ChapterScene } from './chapter-scene';
+import { ChapterScene, chapterAnchor } from './chapter-scene';
 import { CHAPTER_BUILDERS } from './chapters';
 
-const CHAPTER_GAP = 40;
 /** The camera travels a road beside the scenes, framing each subject from the front-right (a 3/4 view). */
 const CAMERA_OFFSET = new THREE.Vector3(18, 7, 16);
 const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
@@ -47,7 +46,7 @@ export class SceneEngine {
     sun.position.set(-20, 30, 15);
     this.scene.add(sun);
 
-    this.anchors = spans.map((_, i) => new THREE.Vector3(Math.sin(i) * 12, 0, -i * CHAPTER_GAP));
+    this.anchors = spans.map((_, i) => chapterAnchor(i));
     this.path = new THREE.CatmullRomCurve3(this.anchors.map((a) => a.clone().add(CAMERA_OFFSET)));
     // Added before load() compiles so the car materials are ready with the first chapter.
     this.scene.add(this.carRig.object);

@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { collectErrors, root, scrollToChapter, visit } from './support';
 
 test('the rally chapter shows the Forester on a gravel stage, captioned without embellishment', async ({ page }) => {
+  test.setTimeout(60_000); // a fine scroll scan, one frame per step, then the camera settling
   const errors = collectErrors(page);
   await visit(page, '/');
 
@@ -25,8 +26,12 @@ test('the rally chapter shows the Forester on a gravel stage, captioned without 
   await expect(page.locator('.card__meta')).toHaveText('2008 – 2013');
   await expect(page.locator('.card__body')).toHaveText('Amateur rally: occasional non-pro events, 2008–2013');
 
-  // Let the camera settle on the stage before the screenshot.
-  await page.waitForTimeout(2000);
+  // Let the eased camera reach the stage before the screenshot (dev-build readout from scene-engine.ts).
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __sceneInfo: () => { settled: boolean } }).__sceneInfo().settled), {
+      timeout: 15_000,
+    })
+    .toBe(true);
   await test.info().attach('rally', { body: await page.screenshot(), contentType: 'image/png' });
   expect(errors).toEqual([]);
 });
