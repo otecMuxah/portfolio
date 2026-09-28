@@ -1,4 +1,4 @@
-import { EN } from './life.en';
+import { EN, EN_DOMAINS } from './life.en';
 
 export type Phase = 'build' | 'shatter' | 'rebuild';
 
@@ -61,8 +61,6 @@ export interface ChapterText {
   placeholder?: true;
   /** Career chapters: the jobs held, as the card names them. */
   roles?: RoleCard[];
-  /** Skills shown on the card; the scene's skill ring has one token per entry. */
-  skills?: string[];
 }
 
 export interface RoleCard {
@@ -71,11 +69,31 @@ export interface RoleCard {
   years: string;
   /** One to three, taken from the CV. */
   highlights: string[];
+  /** The employer a client role was held through, as the CV names it ("via Ciklum"). */
+  via?: string;
+  /** What the work was about, only where the CV or the owner states it; the scene shows its emblem. */
+  domain?: Domain;
+  /** The stack used at this step, taken from the CV; the card lists it and the scene's badges carry it. */
+  tech: string[];
 }
+
+/** Domains the CV (or the owner) names for a career step; each has a low-poly emblem in the scene (scene/work). */
+export type Domain =
+  | 'tailoring'
+  | 'edtech'
+  | 'restaurants'
+  | 'healthcare'
+  | 'iot'
+  | 'data-protection'
+  | 'aviation'
+  | 'fintech';
 
 export type Locale = 'en';
 
 export const CHAPTER_TEXT: Record<Locale, Record<ChapterId, ChapterText>> = { en: EN };
+
+/** How the card and the scene's nameplate name each domain. */
+export const DOMAIN_TEXT: Record<Locale, Record<Domain, string>> = { en: EN_DOMAINS };
 
 export type CarId = 'golf2' | 'mazda323f' | 'mazda3' | 'forester' | 'f30';
 

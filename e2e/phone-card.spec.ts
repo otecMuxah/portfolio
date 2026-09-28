@@ -55,7 +55,11 @@ for (const viewport of [
       await scrollToChapter(page, 'kharkiv-career');
       await expect(toggle).toHaveAttribute('aria-expanded', 'true');
       await expect(page.locator('.card__highlights li').first()).toBeVisible();
-      await expect(page.locator('.card__skills')).toBeVisible();
+      await expect(page.locator('.card__skills').first()).toBeVisible();
+      // Folded, the card hides the chapter's roles with the rest of its details.
+      await toggle.click();
+      await expect(page.locator('.card__role').first()).toBeHidden();
+      await toggle.click();
 
       await page.reload();
       await expect(page.locator(root)).toHaveAttribute('data-scene', 'ready');
@@ -88,7 +92,7 @@ test.describe('on a desktop', () => {
     await expect(page.getByRole('button', { name: 'Chapter details' })).toBeHidden();
     await expect(page.locator('.card__body')).toBeVisible();
     await expect(page.locator('.card__highlights li').first()).toBeVisible();
-    await expect(page.locator('.card__skills')).toBeVisible();
+    await expect(page.locator('.card__skills').first()).toBeVisible();
     expect(errors).toEqual([]);
   });
 });
