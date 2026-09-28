@@ -1,5 +1,5 @@
 import { CHAPTERS, CHAPTER_TEXT } from '../content/life';
-import { carFor, chapterSpans, journeyAt, yearAt } from './journey';
+import { carFor, chapterSpans, journeyAt, riderAt, riderFor, yearAt } from './journey';
 
 const ORDER = [
   'birth',
@@ -25,7 +25,7 @@ const visitedInOrder = () => {
 
 describe('journeyAt', () => {
   it('starts the journey at birth in 1981, before any car', () => {
-    expect(journeyAt(0)).toEqual({ chapterId: 'birth', carId: null, phase: 'build' });
+    expect(journeyAt(0)).toEqual({ chapterId: 'birth', carId: null, riderId: 'crawl', phase: 'build' });
   });
 
   it('ends the journey at IATA', () => {
@@ -121,6 +121,75 @@ describe('the car carrying the camera', () => {
     const backward = distinct(Array.from({ length: 10001 }, (_, i) => journeyAt(1 - i / 10000).carId));
     expect(forward).toEqual([null, 'golf2', 'mazda323f', 'mazda3', 'forester', 'f30']);
     expect(backward).toEqual([...forward].reverse());
+  });
+});
+
+describe('the person on the road before the first car', () => {
+  const spans = chapterSpans();
+  const span = (id: string) => spans.find((s) => s.chapter.id === id)!;
+  const at = (id: string, local: number) => span(id).start + (span(id).end - span(id).start) * local;
+
+  it.each([
+    [1981, 'crawl'],
+    [1986.9, 'crawl'],
+    [1987, 'walk'],
+    [1993.9, 'walk'],
+    [1994, 'run'],
+    [1998, 'bike'],
+    [2002.9, 'bike'],
+    [2003, null],
+    [2024, null],
+  ])('in %d is %s', (year, riderId) => {
+    expect(riderFor(year).riderId).toBe(riderId);
+  });
+
+  it('crawls at birth, walks to school, runs at the lyceum and cycles through university until the Golf', () => {
+    expect(riderAt(0).riderId).toBe('crawl');
+    expect(riderAt(at('birth', 0.5)).riderId).toBe('crawl');
+    expect(riderAt(at('school', 0.5)).riderId).toBe('walk');
+    expect(riderAt(at('lyceum', 0.5)).riderId).toBe('run');
+    expect(riderAt(at('university', 0.5)).riderId).toBe('bike');
+    expect(riderAt(at('dreamweaver', 0.49)).riderId).toBe('bike');
+    expect(riderAt(at('dreamweaver', 0.51)).riderId).toBeNull();
+    expect(journeyAt(at('dreamweaver', 0.51))).toMatchObject({ carId: 'golf2', riderId: null });
+    expect(riderAt(1).riderId).toBeNull();
+  });
+
+  it('grows continuously, half-way through each change in its year, with no jump anywhere', () => {
+    expect(riderFor(1981).growth).toBe(0);
+    expect(riderFor(1987).growth).toBeCloseTo(0.5);
+    expect(riderFor(1990).growth).toBe(1);
+    expect(riderFor(1994).growth).toBeCloseTo(1.5);
+    expect(riderFor(1998).growth).toBeCloseTo(2.5);
+    expect(riderFor(2000).growth).toBe(3);
+    let last = riderAt(0).growth;
+    for (let i = 1; i <= 3000; i++) {
+      const { growth } = riderAt((i / 3000) * at('dreamweaver', 0.49));
+      expect(growth - last).toBeGreaterThanOrEqual(0);
+      expect(growth - last).toBeLessThan(0.05);
+      last = growth;
+    }
+  });
+
+  it('gets off the bike over the last stretch before the first car', () => {
+    expect(riderFor(2002).handover).toBe(0);
+    expect(riderFor(2002.65).handover).toBeCloseTo(0.5);
+    expect(riderFor(2002.999).handover).toBeCloseTo(1, 2);
+  });
+
+  it('meets each stage once, in order, and reverses exactly when scrolling back', () => {
+    const distinct = (ids: (string | null)[]) => ids.filter((id, i) => i === 0 || id !== ids[i - 1]);
+    const progress = Array.from({ length: 10001 }, (_, i) => i / 10000);
+    const forward = progress.map((p) => ({ ...riderAt(p) }));
+    const backward = [...progress].reverse().map((p) => ({ ...riderAt(p) }));
+    expect(distinct(forward.map((r) => r.riderId))).toEqual(['crawl', 'walk', 'run', 'bike', null]);
+    expect(backward.reverse()).toEqual(forward);
+  });
+
+  it('writes into the state it is given rather than allocating one', () => {
+    const out = riderAt(0);
+    expect(riderAt(at('school', 0.5), out)).toBe(out);
+    expect(out.riderId).toBe('walk');
   });
 });
 
