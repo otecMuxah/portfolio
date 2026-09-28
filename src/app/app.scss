@@ -1,0 +1,41 @@
+.scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.track {
+  position: relative;
+}
+
+.card {
+  position: fixed;
+  left: clamp(1rem, 5vw, 4rem);
+  bottom: clamp(1rem, 8vh, 5rem);
+  max-width: 28rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  background: rgb(13 15 20 / 72%);
+  backdrop-filter: blur(8px);
+  color: #f4efe6;
+
+  &__meta {
+    margin: 0 0 0.25rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  &__title {
+    margin: 0 0 0.5rem;
+    font-size: 1.6rem;
+  }
+
+  &__body {
+    margin: 0;
+    line-height: 1.5;
+  }
+}

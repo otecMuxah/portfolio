@@ -1,0 +1,11 @@
+<canvas #canvas class="scene" aria-hidden="true"></canvas>
+
+<main #track class="track" [style.height]="trackHeight">
+  <article class="card" aria-live="polite">
+    <p class="card__meta">
+      {{ chapter().year }}@if (chapter().yearEnd) { – {{ chapter().yearEnd }} } · {{ chapter().place }}
+    </p>
+    <h2 class="card__title">{{ chapter().title }}</h2>
+    <p class="card__body">{{ chapter().body }}</p>
+  </article>
+</main>
