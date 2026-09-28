@@ -55,6 +55,8 @@ describe('journeyAt', () => {
     const cars = Object.fromEntries(visitedInOrder().map((s) => [s.chapterId, s.carId]));
     expect(cars).toMatchObject({
       birth: null,
+      school: null,
+      lyceum: null,
       university: null,
       dreamweaver: null,
       family: 'mazda3',
@@ -79,6 +81,10 @@ describe('chapter spans', () => {
 });
 
 describe('life content', () => {
+  it('dates every chapter but the garage', () => {
+    expect(CHAPTERS.filter((c) => c.year === undefined).map((c) => c.id)).toEqual(['garage']);
+  });
+
   it('lists dated chapters in chronological order', () => {
     const years = CHAPTERS.flatMap((c) => (c.year === undefined ? [] : [c.year]));
     expect(years).toEqual([...years].sort((a, b) => a - b));

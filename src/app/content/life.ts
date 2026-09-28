@@ -56,8 +56,8 @@ export interface Car {
 
 export const CHAPTERS: Chapter[] = [
   { id: 'birth', year: 1981, phase: 'build', scene: 'placeholder' },
-  { id: 'school', phase: 'build', scene: 'placeholder' },
-  { id: 'lyceum', phase: 'build', scene: 'placeholder' },
+  { id: 'school', year: 1987, yearEnd: 1994, phase: 'build', scene: 'placeholder' },
+  { id: 'lyceum', year: 1994, yearEnd: 1998, phase: 'build', scene: 'placeholder' },
   { id: 'university', year: 1998, yearEnd: 2004, phase: 'build', scene: 'placeholder' },
   { id: 'dreamweaver', year: 2000, phase: 'build', scene: 'placeholder' },
   { id: 'family', year: 2006, yearEnd: 2010, phase: 'build', scene: 'placeholder' },

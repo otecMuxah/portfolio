@@ -95,7 +95,7 @@ test('arrow and page keys move between chapters; Tab reaches timeline items', as
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'school');
 });
 
-test('arrow and page keys stay with text fields and open dialogs', async ({ page }) => {
+test('arrow and page keys stay with text fields and scroll the open CV dialog', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
 
@@ -113,14 +113,11 @@ test('arrow and page keys stay with text fields and open dialogs', async ({ page
   await page.waitForTimeout(500);
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
 
-  await page.evaluate(() => {
-    const dialog = document.body.appendChild(document.createElement('dialog'));
-    dialog.style.cssText = 'height: 200px; overflow: auto';
-    dialog.textContent = 'CV '.repeat(2000);
-    dialog.showModal();
-  });
+  await page.getByRole('button', { name: 'Skip to CV' }).click();
+  const cv = page.getByRole('dialog', { name: 'CV' });
+  await expect(cv).toBeVisible();
   await page.keyboard.press('PageDown');
   await page.waitForTimeout(500);
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
-  expect(await page.locator('dialog').evaluate((d) => d.scrollTop)).toBeGreaterThan(0);
+  await expect.poll(() => cv.evaluate((d) => d.scrollTop)).toBeGreaterThan(0);
 });

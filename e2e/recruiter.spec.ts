@@ -1,4 +1,5 @@
 import { Page, expect, test } from '@playwright/test';
+import { scrollToChapter } from './support';
 
 const skipToCv = (page: Page) => page.getByRole('button', { name: 'Skip to CV' });
 
@@ -43,10 +44,7 @@ test('Skip to CV opens the CV view from the hero', async ({ page }) => {
 
 test('Skip to CV opens the CV view from mid-journey', async ({ page }) => {
   await page.goto('/');
-  await page.evaluate(() =>
-    window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * 0.5),
-  );
-  await expect(page.locator('app-root')).toHaveAttribute('data-chapter', 'first-code');
+  await scrollToChapter(page, 'first-code');
   await expect(skipToCv(page)).toBeInViewport();
   await skipToCv(page).click();
   await expectCvShown(page);
