@@ -177,6 +177,17 @@ describe('the person on the road before the first car', () => {
     expect(riderFor(2002.999).handover).toBeCloseTo(1, 2);
   });
 
+  it('has the Golf pull up beside him by scroll, and only then has him get in', () => {
+    expect(riderFor(2002.9)).toMatchObject({ arrival: 0, boarding: 0 });
+    expect(riderFor(2003.1)).toMatchObject({ riderId: null, boarding: 0 });
+    expect(riderFor(2003.1).arrival).toBeCloseTo(0.5);
+    expect(riderFor(2003.19)).toMatchObject({ boarding: 0 });
+    expect(riderFor(2003.21)).toMatchObject({ arrival: 1 });
+    expect(riderFor(2003.325).boarding).toBeCloseTo(0.5);
+    expect(riderFor(2003.5)).toMatchObject({ arrival: 1, boarding: 1 });
+    expect(riderAt(at('iata', 0.5))).toMatchObject({ riderId: null, arrival: 1, boarding: 1 });
+  });
+
   it('meets each stage once, in order, and reverses exactly when scrolling back', () => {
     const distinct = (ids: (string | null)[]) => ids.filter((id, i) => i === 0 || id !== ids[i - 1]);
     const progress = Array.from({ length: 10001 }, (_, i) => i / 10000);

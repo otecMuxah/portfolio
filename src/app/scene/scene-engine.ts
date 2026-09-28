@@ -260,8 +260,9 @@ export class SceneEngine {
         fallIn(this.carAt, this.camera.position, this.look, this.chase, this.chaseLook, chase);
       }
     }
-    this.carRig.update(journeyAt(this.current).carId, this.carAt, this.tangent, time);
-    this.rider.update(riderAt(this.current, this.riderState), this.current, this.carAt, this.tangent, time);
+    const rider = riderAt(this.current, this.riderState);
+    this.carRig.update(journeyAt(this.current).carId, this.carAt, this.tangent, time, rider.arrival);
+    this.rider.update(rider, this.current, this.carAt, this.tangent, time);
 
     const war = this.war ? (this.current - this.war.start) / (this.war.end - this.war.start) : 0;
     const roll = shakeAt(war, this.shake);
