@@ -1,4 +1,5 @@
 import { Page, expect, test } from '@playwright/test';
+import { collectErrors } from './support';
 
 const TITLES = [
   'Born in Kharkiv',
@@ -19,18 +20,39 @@ const TITLES = [
 
 const story = (page: Page) => page.getByRole('list', { name: 'Life story' });
 
-function collectErrors(page: Page) {
-  const errors: string[] = [];
-  page.on('console', (msg) => msg.type() === 'error' && errors.push(msg.text()));
-  page.on('pageerror', (err) => errors.push(err.message));
-  return errors;
-}
-
-test('screen readers get every chapter in order while the 3D journey runs', async ({ page }) => {
+test('screen readers get every chapter in order, once, while the 3D journey runs', async ({
+  page,
+}) => {
   await page.goto('/');
   await expect(page.locator('canvas.scene')).toBeVisible();
   await expect(story(page).getByRole('listitem').getByRole('heading')).toHaveText(TITLES);
   await expect(story(page).getByRole('listitem').nth(10)).toContainText('4 a.m. Explosions.');
+  await expect(page.getByRole('heading', { level: 2 })).toHaveCount(TITLES.length);
+});
+
+test('when the renderer cannot start despite WebGL, the list takes over', async ({ page }) => {
+  await page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (
+      this: HTMLCanvasElement,
+      id: string,
+      ...rest: unknown[]
+    ) {
+      return this.classList.contains('scene')
+        ? null
+        : getContext.call(this, id as '2d', ...(rest as []));
+    } as typeof getContext;
+  });
+  const pageErrors: string[] = [];
+  const warnings: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(err.message));
+  page.on('console', (msg) => msg.type() === 'warning' && warnings.push(msg.text()));
+
+  await page.goto('/');
+  await expect(page.locator('canvas.scene')).toHaveCount(0);
+  await expect(story(page).getByRole('heading').first()).toBeVisible();
+  expect(pageErrors).toEqual([]);
+  expect(warnings.filter((w) => w.includes('story list'))).toHaveLength(1);
 });
 
 test.describe('without WebGL', () => {
@@ -59,6 +81,13 @@ test.describe('without WebGL', () => {
       await expect(heading).toBeVisible();
     }
     expect(errors).toEqual([]);
+  });
+
+  test('a chapter deep link lands on that chapter in the list', async ({ page }) => {
+    await page.goto('/#war');
+    await expect(story(page).locator('#war')).toContainText('24.02.2022');
+    await expect(story(page).locator('#war')).toBeInViewport();
+    await expect(story(page).locator('#birth')).not.toBeInViewport();
   });
 
   test('Skip to CV and the contact links work', async ({ page }) => {

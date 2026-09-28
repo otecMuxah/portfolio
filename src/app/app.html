@@ -1,11 +1,11 @@
-@if (webgl) {
+@if (webgl()) {
   <canvas #canvas class="scene" aria-hidden="true"></canvas>
 }
 
 <button type="button" class="skip-cv" (click)="cv.open()">Skip to CV</button>
 <app-cv-view #cv />
 
-@if (webgl) {
+@if (webgl()) {
   <nav #nav class="timeline" aria-label="Timeline">
     <ol class="timeline__list">
       @for (item of timeline; track item.id) {
@@ -27,11 +27,11 @@
   </nav>
 }
 
-<main #track class="track" [class.track--static]="!webgl" [style.height]="webgl ? trackHeight : null">
+<main #track class="track" [class.track--static]="!webgl()" [style.height]="webgl() ? trackHeight : null">
   <app-hero />
-  <ol class="story" [class.story--sr-only]="webgl" aria-label="Life story">
+  <ol class="story" [class.story--sr-only]="webgl()" aria-label="Life story">
     @for (item of story; track item.id) {
-      <li class="story__item">
+      <li class="story__item" [attr.id]="webgl() ? null : item.id">
         @if (item.placeholder) {
           <p class="story__flag">Placeholder text: Mykhailo’s own words to come</p>
         }
@@ -43,8 +43,8 @@
       </li>
     }
   </ol>
-  @if (webgl) {
-    <article class="card" aria-live="polite">
+  @if (webgl()) {
+    <article class="card" aria-hidden="true">
       @if (text().placeholder) {
         <p class="card__flag">Placeholder text: Mykhailo’s own words to come</p>
       }
