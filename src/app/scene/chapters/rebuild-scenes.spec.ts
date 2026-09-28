@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CHAPTERS, ChapterId } from '../../content/life';
-import { built, sceneContract, stubCanvas } from './scene-contract';
+import { build, built, sceneContract, stubCanvas } from './scene-contract';
 
 const REBUILD: ChapterId[] = ['ciklum', 'iata'];
 
@@ -20,6 +20,14 @@ function standing(id: ChapterId, local: number): number {
   return n;
 }
 
+/** Window panes (a quad of 6 vertices each) glowing brighter than dark glass in the house. */
+function litWindows(object: THREE.Object3D): number {
+  const colour = (object.getObjectByName('windows') as THREE.Mesh).geometry.getAttribute('color');
+  let n = 0;
+  for (let i = 0; i < colour.count; i += 6) if (colour.getX(i) + colour.getY(i) + colour.getZ(i) > 0.6) n++;
+  return n;
+}
+
 describe('rebuild scenes', () => {
   beforeAll(stubCanvas);
 
@@ -29,14 +37,28 @@ describe('rebuild scenes', () => {
     for (const c of chapters) expect(c.phase).toBe('rebuild');
   });
 
-  it('Ciklum starts from nothing and goes up piece by piece as the scroll goes on', () => {
+  it('Aschaffenburg: the castle goes up piece by piece as the scroll goes on, and stands by the time the camera arrives', () => {
     expect(standing('ciklum', 0)).toBe(0);
     let last = 0;
-    for (const local of [0.2, 0.3, 0.4, 0.5, 0.6]) {
+    for (const local of [0.2, 0.3, 0.4, 0.5]) {
       const n = standing('ciklum', local);
       expect(n).toBeGreaterThan(last);
       last = n;
     }
+    for (const local of [0.6, 0.9, 2]) expect(standing('ciklum', local)).toBe(last);
+  });
+
+  it("Aschaffenburg: the house's windows light one by one with the scroll, and scrolling back puts them out again", () => {
+    expect(litWindows(built('ciklum', 0))).toBe(0);
+    let last = 0;
+    for (const local of [0.35, 0.45, 0.55, 0.62, 0.7]) {
+      const n = litWindows(built('ciklum', local));
+      expect(n, `lit at local ${local}`).toBeGreaterThan(last);
+      last = n;
+    }
+    const scene = build('ciklum');
+    for (const local of [0.6, 1.5, 0.6]) scene.update?.({ progress: 0, local, time: 3 });
+    expect(litWindows(scene.object)).toBe(litWindows(built('ciklum', 0.6)));
   });
 
   it('Frankfurt rises as the camera comes in, and planes cross it on their arcs by scroll alone', () => {
