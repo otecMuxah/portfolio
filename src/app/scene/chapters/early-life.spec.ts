@@ -62,8 +62,9 @@ function solids(object: THREE.Object3D): THREE.Box3[] {
   return boxes;
 }
 
-const CAR_LANE = new THREE.Box3(new THREE.Vector3(-3, -Infinity, 4), new THREE.Vector3(3, Infinity, 14));
-/** The road and the car pass front-right of each subject; that quadrant stays open. */
+/** Where the car stands at a chapter's midpoint: anchor + CAR_OFFSET (12, 0, 2), a car's width by its length along the road. */
+const CAR = new THREE.Box3(new THREE.Vector3(11, -Infinity, -0.5), new THREE.Vector3(13, Infinity, 4.5));
+/** The road and the camera sit front-right of each subject (camera at (18, 7, 16)); that quadrant stays open. */
 const ROAD_SIDE = new THREE.Box3(new THREE.Vector3(4, -Infinity, 4), new THREE.Vector3(Infinity, Infinity, Infinity));
 
 describe('early-life scenes', () => {
@@ -90,11 +91,11 @@ describe('early-life scenes', () => {
         expect(lights).toBe(0);
       });
 
-      it('keeps the car lane and the road side clear and stays inside its 12 m plot, before, during and after the camera', () => {
+      it('keeps clear of the car on the road and the road side and stays inside its 12 m plot, before, during and after the camera', () => {
         for (const local of [-0.5, 0, 0.5, 1, 2]) {
           const scene = built(id, local);
           for (const box of solids(scene)) {
-            expect(box.intersectsBox(CAR_LANE), `${id} lane at local ${local}`).toBe(false);
+            expect(box.intersectsBox(CAR), `${id} car at local ${local}`).toBe(false);
             expect(box.intersectsBox(ROAD_SIDE), `${id} road side at local ${local}`).toBe(false);
           }
           for (const v of vertices(scene)) {

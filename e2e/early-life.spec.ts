@@ -47,6 +47,13 @@ async function pixelDiff(page: Page, a: Buffer, b: Buffer): Promise<number> {
   );
 }
 
+/** Where a chapter's framing is exact: the middle of its scroll span. */
+const midpoint = (id: string) => {
+  const span = chapterSpans().find((s) => s.chapter.id === id)!;
+  return (span.start + span.end) / 2;
+};
+
+test.use({ viewport: { width: 1440, height: 900 } });
 test.beforeAll(() => mkdirSync(EVIDENCE, { recursive: true }));
 
 for (const [i, id] of CHAPTERS.entries()) {
@@ -54,6 +61,7 @@ for (const [i, id] of CHAPTERS.entries()) {
     const errors = collectErrors(page);
     await visit(page, '/');
     await scrollToChapter(page, id);
+    await scrollJourney(page, midpoint(id));
     await shoot(page, `0${i + 1}-${id}`);
     expect(errors).toEqual([]);
   });
@@ -63,6 +71,7 @@ test('late in the family chapter a third light joins the two', async ({ page }) 
   const errors = collectErrors(page);
   await visit(page, '/');
   await scrollToChapter(page, 'family');
+  await scrollJourney(page, midpoint('family'));
   const met = await shoot(page, '06-family');
   const family = chapterSpans().find((s) => s.chapter.id === 'family')!;
   await scrollJourney(page, family.start + 0.75 * (family.end - family.start));
@@ -75,8 +84,7 @@ test('late in the family chapter a third light joins the two', async ({ page }) 
 test('scrolling back from family rebuilds birth exactly as it was', async ({ page }) => {
   const errors = collectErrors(page);
   // The exact same scroll position both times, so any difference is the scene's, not the camera's.
-  const birth = chapterSpans()[0];
-  const birthMid = (birth.start + birth.end) / 2;
+  const birthMid = midpoint('birth');
   await visit(page, '/');
   await scrollToChapter(page, 'birth');
   await scrollJourney(page, birthMid);

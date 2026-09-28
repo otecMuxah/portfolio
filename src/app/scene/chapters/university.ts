@@ -56,7 +56,8 @@ function scales(): { crown: THREE.Group; beam: THREE.Group; pans: THREE.Object3D
 /** 1998–2004: two sandstone pillars, one per master's degree, crowned with a gear and with scales. */
 export const university: ChapterBuilder = () => {
   const object = new THREE.Group();
-  object.add(mergedMesh([block(11, 0.35, 4, 0, PILLAR_Z)], lowPoly('chalk')));
+  const base = mergedMesh([block(11, 0.35, 4, 0, PILLAR_Z)], lowPoly('chalk'));
+  object.add(base);
 
   const pillars = [pillar(-PILLAR_X), pillar(PILLAR_X)];
   pillars.forEach((p) => object.add(p));
@@ -82,6 +83,9 @@ export const university: ChapterBuilder = () => {
     update({ local, time }) {
       const built = enter(local);
       const calm = leave(local);
+      const laid = smoothstep(0.1, 0.3, built);
+      base.visible = laid > 0;
+      base.scale.set(Math.max(laid, 1e-3), 1, 1);
       pillars.forEach((p, i) => {
         const rise = smoothstep(0.1 + 0.2 * i, 0.55 + 0.2 * i, built);
         p.visible = rise > 0;
