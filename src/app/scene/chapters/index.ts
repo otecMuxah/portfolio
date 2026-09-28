@@ -13,6 +13,7 @@ import { placeholder } from './placeholder';
 import { rally } from './rally';
 import { school } from './school';
 import { university } from './university';
+import { war } from './war';
 
 /** One builder per scene kind; add a kind to SceneKind and its builder here. */
 export const CHAPTER_BUILDERS: Record<SceneKind, ChapterBuilder> = {
@@ -28,5 +29,6 @@ export const CHAPTER_BUILDERS: Record<SceneKind, ChapterBuilder> = {
   'kharkiv-career': kharkivCareer,
   krakow,
   'back-home': backHome,
+  war,
   garage,
 };
