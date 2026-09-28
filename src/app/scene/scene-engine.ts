@@ -16,6 +16,7 @@ export class SceneEngine {
   private readonly anchors: THREE.Vector3[];
   private readonly path: THREE.CatmullRomCurve3;
   private readonly resizeObserver: ResizeObserver;
+  /** Sparse until every chapter has been built. */
   private readonly chapterScenes: ChapterScene[] = [];
   private readonly clock = new THREE.Timer();
   private target = 0;
@@ -45,25 +46,38 @@ export class SceneEngine {
   }
 
   /**
-   * Builds each chapter's scene a frame at a time, compiles the shaders, then starts the loop.
-   * Reports progress 0..1 so the page can show a loader meanwhile.
+   * Builds and compiles the first chapter, starts the loop and resolves: the page is ready.
+   * The other chapters then build in the background, one per frame. Reports progress 0..1
+   * toward that first chapter so the page can show a loader meanwhile.
    */
   async load(onProgress: (progress: number) => void): Promise<void> {
-    const steps = this.spans.length + 1;
-    for (const [i, { chapter }] of this.spans.entries()) {
-      const built = CHAPTER_BUILDERS[chapter.scene](chapter, i);
-      built.object.position.add(this.anchors[i]);
-      this.scene.add(built.object);
-      this.chapterScenes.push(built);
-      onProgress((i + 1) / steps);
-      await new Promise(requestAnimationFrame);
-      if (this.disposed) return;
-    }
+    onProgress(0);
+    this.build(0);
+    onProgress(0.5);
     await this.renderer.compileAsync(this.scene, this.camera);
     if (this.disposed) return;
     this.frame();
-    onProgress(1);
     this.renderer.setAnimationLoop(() => this.frame());
+    onProgress(1);
+    this.buildRest().catch((err) => console.warn('Chapter scenes failed to build', err));
+  }
+
+  private async buildRest(): Promise<void> {
+    for (let i = 1; i < this.spans.length; i++) {
+      await new Promise(requestAnimationFrame);
+      if (this.disposed) return;
+      // Compile now, not on the first frame that shows it, so scrolling there doesn't hitch.
+      await this.renderer.compileAsync(this.build(i), this.camera, this.scene);
+    }
+  }
+
+  private build(index: number): THREE.Object3D {
+    const { chapter } = this.spans[index];
+    const built = CHAPTER_BUILDERS[chapter.scene](chapter, index);
+    built.object.position.add(this.anchors[index]);
+    this.scene.add(built.object);
+    this.chapterScenes[index] = built;
+    return built.object;
   }
 
   /** Journey progress 0..1; the camera eases toward it each frame. */
@@ -89,7 +103,7 @@ export class SceneEngine {
     this.clock.update();
     const time = this.clock.getElapsed();
     this.spans.forEach(({ start, end }, i) =>
-      this.chapterScenes[i].update?.({ progress: this.current, local: (this.current - start) / (end - start), time }),
+      this.chapterScenes[i]?.update?.({ progress: this.current, local: (this.current - start) / (end - start), time }),
     );
     // getPoint is uniform per segment, so t = i / (n - 1) lands exactly on anchor i.
     const t = this.pathT(this.current);

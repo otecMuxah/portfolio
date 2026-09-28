@@ -63,7 +63,13 @@ export class App {
     const destroyRef = inject(DestroyRef);
     afterNextRender(() => {
       const engine = new SceneEngine(this.canvas().nativeElement, SPANS);
-      engine.load((progress) => this.loaded.set(progress));
+      engine
+        .load((progress) => this.loaded.set(progress))
+        .catch((err) => {
+          // The text is all there without the scene, so drop the loader rather than leave it stuck.
+          console.warn('3D scene failed to load', err);
+          this.loaded.set(1);
+        });
       const trigger = ScrollTrigger.create({
         trigger: this.track().nativeElement,
         start: 'top top',

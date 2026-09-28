@@ -36,6 +36,11 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+**SSR rule.** `ng build` prerenders the page in Node (`outputMode: "static"`), so crawlers, link previews and screen readers get the text before any script runs. Every component therefore also runs on the server:
+
+- Touch browser globals (`window`, `document`, `location`, `matchMedia`, WebGL, `new Date()` for anything shown) only inside `afterNextRender` or behind `isPlatformBrowser`. Anything rendered from them on the server is baked into the HTML at build time (the hero age is set in `afterNextRender` for that reason).
+- Chapter builders (`src/app/scene/chapters`) must be synchronous. `SceneEngine.load()` builds the first chapter, drops the loader, then builds one chapter per frame.
+
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:

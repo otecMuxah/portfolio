@@ -1,5 +1,5 @@
 import { Page, expect, test } from '@playwright/test';
-import { scrollToChapter } from './support';
+import { ready, scrollToChapter, visit } from './support';
 
 const skipToCv = (page: Page) => page.getByRole('button', { name: 'Skip to CV' });
 
@@ -21,7 +21,7 @@ async function expectCvShown(page: Page) {
 
 test('the hero names Mykhailo, his title and his age as of today', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2026-05-25T12:00:00'));
-  await page.goto('/');
+  await visit(page, '/');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('44 years, one journey.');
   const hero = page.locator('app-hero');
   await expect(hero.getByText('Mykhailo Maliavin', { exact: true })).toBeVisible();
@@ -29,11 +29,12 @@ test('the hero names Mykhailo, his title and his age as of today', async ({ page
 
   await page.clock.setFixedTime(new Date('2026-05-26T12:00:00'));
   await page.reload();
+  await ready(page);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('45 years, one journey.');
 });
 
 test('Skip to CV opens the CV view from the hero', async ({ page }) => {
-  await page.goto('/');
+  await visit(page, '/');
   await expect(skipToCv(page)).toBeInViewport();
   await skipToCv(page).click();
   await expectCvShown(page);
@@ -43,7 +44,7 @@ test('Skip to CV opens the CV view from the hero', async ({ page }) => {
 });
 
 test('Skip to CV opens the CV view from mid-journey', async ({ page }) => {
-  await page.goto('/');
+  await visit(page, '/');
   await scrollToChapter(page, 'first-code');
   await expect(skipToCv(page)).toBeInViewport();
   await skipToCv(page).click();
@@ -53,7 +54,7 @@ test('Skip to CV opens the CV view from mid-journey', async ({ page }) => {
 test('contact links are email, LinkedIn and GitHub, and no phone number is rendered', async ({
   page,
 }) => {
-  await page.goto('/');
+  await visit(page, '/');
   const contacts = page.getByRole('list', { name: 'Contact' }).first();
   await expect(contacts.getByRole('link', { name: 'Email' })).toHaveAttribute(
     'href',

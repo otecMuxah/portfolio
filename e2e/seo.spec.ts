@@ -10,6 +10,8 @@ test('the served HTML carries the name, title and first chapter before any scrip
   expect(html).toContain('Born in Kharkiv');
   expect(html).toContain('26 May 1981.');
   expect(html).toMatch(/role="progressbar"/);
+  // The age is computed in the visitor's browser; a prerendered number would go stale.
+  expect(html).toMatch(/<h1[^>]*>(\s|<!--[^>]*-->)*one journey\.\s*<\/h1>/);
 });
 
 test('title, description, canonical and social preview tags are set', async ({ page, request }) => {
@@ -57,10 +59,11 @@ test('a loader shows progress until the 3D scene is ready, without hiding the fi
   await expect(loader).toBeVisible();
   // Screen readers and crawlers get the first chapter while the scene loads.
   await expect(page.getByRole('heading', { name: 'Born in Kharkiv' })).toBeVisible();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/years, one journey\./);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('one journey.');
 
   release();
   await expect(loader).toBeHidden();
   await expect(page.locator(root)).toHaveAttribute('data-scene', 'ready');
   await expect(page.getByRole('heading', { name: 'Born in Kharkiv' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\d+ years, one journey\.$/);
 });
