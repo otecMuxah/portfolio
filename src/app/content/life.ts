@@ -3,7 +3,7 @@ export type Phase = 'build' | 'shatter' | 'rebuild' | 'garage';
 export interface Chapter {
   id: string;
   year: number;
-  yearEnd?: number;
+  yearEnd?: number | 'now';
   place: string;
   title: string;
   body: string;
@@ -18,8 +18,6 @@ export interface Car {
   colour: string;
   fromYear: number;
 }
-
-export const BIRTH_DATE = new Date(1981, 4, 26);
 
 // Walking-skeleton sample; the full chapter list lands in ticket 03.
 export const CHAPTERS: Chapter[] = [
@@ -42,6 +40,7 @@ export const CHAPTERS: Chapter[] = [
   {
     id: 'iata',
     year: 2024,
+    yearEnd: 'now',
     place: 'Frankfurt',
     title: 'IATA',
     body: 'Senior Full-Stack Developer (contract), leading a team of 6 developers within a 50-person engineering organisation.',

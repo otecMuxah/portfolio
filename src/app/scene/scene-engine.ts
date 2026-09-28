@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ChapterSpan } from '../journey/journey';
+import { ChapterSpan, spanAt } from '../journey/journey';
 
 const CHAPTER_GAP = 40;
 const CAMERA_OFFSET = new THREE.Vector3(0, 6, 18);
@@ -27,9 +27,7 @@ export class SceneEngine {
 
     const anchors = spans.map((_, i) => new THREE.Vector3(Math.sin(i) * 12, 0, -i * CHAPTER_GAP));
     spans.forEach((_, i) => this.scene.add(this.placeholder(anchors[i], i)));
-    this.path = new THREE.CatmullRomCurve3(
-      [anchors[0].clone().setZ(18), ...anchors].map((a) => a.clone().add(CAMERA_OFFSET)),
-    );
+    this.path = new THREE.CatmullRomCurve3(anchors.map((a) => a.clone().add(CAMERA_OFFSET)));
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -65,23 +63,23 @@ export class SceneEngine {
 
   private frame(): void {
     this.current += (this.target - this.current) * 0.08;
-    // Map progress so each chapter's scroll span centres the camera on its anchor.
+    // getPoint is uniform per segment, so t = i / (n - 1) lands exactly on anchor i.
     const t = this.pathT(this.current);
-    this.camera.position.copy(this.path.getPointAt(t));
+    this.camera.position.copy(this.path.getPoint(t));
     this.camera.lookAt(this.camera.position.clone().sub(CAMERA_OFFSET).add(LOOK_OFFSET));
     this.renderer.render(this.scene, this.camera);
   }
 
+  /** The middle of each chapter's scroll span puts the camera on that chapter's anchor. */
   private pathT(progress: number): number {
-    const n = this.spans.length;
-    const i = Math.max(this.spans.findIndex((s) => progress < s.end), 0);
-    const s = this.spans[progress >= 1 ? n - 1 : i];
-    const local = (progress - s.start) / (s.end - s.start);
-    return Math.min((this.spans.indexOf(s) + local) / n, 1);
+    const { index, start, end } = spanAt(this.spans, progress);
+    const local = (Math.min(Math.max(progress, 0), 1) - start) / (end - start);
+    return Math.min(Math.max((index + local - 0.5) / (this.spans.length - 1), 0), 1);
   }
 
   private resize(): void {
     const { clientWidth: w, clientHeight: h } = this.canvas;
+    if (!w || !h) return;
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();

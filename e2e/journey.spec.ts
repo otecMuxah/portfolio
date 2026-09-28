@@ -28,6 +28,7 @@ test('scrolling walks the visitor through each chapter in order', async ({ page 
   await scrollJourney(page, 1);
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'iata');
   await expect(page.getByRole('heading', { name: 'IATA' })).toBeVisible();
+  await expect(page.locator('.card__meta')).toHaveText('2024 – now · Frankfurt');
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'rebuild');
 
   await scrollJourney(page, 0);

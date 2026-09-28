@@ -8,6 +8,7 @@ export interface JourneyState {
 
 export interface ChapterSpan {
   chapter: Chapter;
+  index: number;
   start: number;
   end: number;
 }
@@ -16,21 +17,26 @@ export interface ChapterSpan {
 export function chapterSpans(chapters: Chapter[] = CHAPTERS): ChapterSpan[] {
   const total = chapters.reduce((sum, c) => sum + (c.scrollWeight ?? 1), 0);
   let start = 0;
-  return chapters.map((chapter) => {
+  return chapters.map((chapter, index) => {
     const end = start + (chapter.scrollWeight ?? 1) / total;
-    const span = { chapter, start, end };
+    const span = { chapter, index, start, end };
     start = end;
     return span;
   });
+}
+
+/** The span containing progress, clamped to the first and last chapter. */
+export function spanAt(spans: ChapterSpan[], progress: number): ChapterSpan {
+  return spans.find((s) => progress < s.end) ?? spans[spans.length - 1];
 }
 
 export function carFor(year: number, cars: Car[] = CARS): Car | null {
   return cars.filter((c) => c.fromYear <= year).at(-1) ?? null;
 }
 
+const SPANS = chapterSpans();
+
 export function journeyAt(progress: number): JourneyState {
-  const spans = chapterSpans();
-  const p = Math.min(Math.max(progress, 0), 1);
-  const { chapter } = spans.find((s) => p < s.end) ?? spans[spans.length - 1];
+  const { chapter } = spanAt(SPANS, progress);
   return { chapterId: chapter.id, carId: carFor(chapter.year)?.id ?? null, phase: chapter.phase };
 }
