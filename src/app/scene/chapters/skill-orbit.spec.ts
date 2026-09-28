@@ -48,7 +48,7 @@ describe('skill orbit', () => {
     expect(tokenScale(3, 0.5, 7)).toBe(tokenScale(3, 0.5, 7));
   });
 
-  it('draws the whole ring as one instanced mesh, one badge per skill in its own tint', () => {
+  it('draws the badges as one instanced mesh, one badge per skill in its own tint', () => {
     const orbit = skillOrbit(['terracotta', 'wheat', 'homeWarm']);
     expect(orbit.object).toBeInstanceOf(THREE.InstancedMesh);
     expect(orbit.object.instanceMatrix.count).toBe(3);
@@ -57,5 +57,17 @@ describe('skill orbit', () => {
     orbit.object.getColorAt(0, a);
     orbit.object.getColorAt(1, b);
     expect(a.equals(b)).toBe(false);
+  });
+
+  it('shows the ring the badges ride on, widening with them and hidden until the first joins', () => {
+    const orbit = skillOrbit(['terracotta', 'wheat', 'homeWarm']);
+    const ring = orbit.object.children[0] as THREE.Mesh;
+    orbit.update(0, 0);
+    expect(ring.visible).toBe(false);
+    orbit.update(0.5, 0);
+    expect(ring.visible).toBe(true);
+    expect(ring.scale.x).toBeCloseTo(ringRadius(0.5));
+    orbit.update(1, 0);
+    expect(ring.scale.x).toBeCloseTo(RING_MAX_RADIUS);
   });
 });

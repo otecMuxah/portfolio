@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { glow } from '../art/kit';
 import { PALETTE, PaletteKey } from '../art/palette';
 
 export const RING_MIN_RADIUS = 2.5;
@@ -26,16 +27,20 @@ export function ringRadius(local: number): number {
 }
 
 export interface SkillOrbit {
+  /** The badges; the ring they ride on is its child. */
   object: THREE.InstancedMesh;
   /** Pure in `local`; `time` only turns the ring and bobs the badges. */
   update(local: number, time: number): void;
 }
 
-const BADGE_SIZE = 0.9;
+const BADGE_SIZE = 1.35;
+/** Every badge faces the road camera (offset (18, 7, 16)), so all read as the same hexagon. */
+const FACING = new THREE.Euler(-Math.atan2(7, Math.hypot(18, 16)), Math.atan2(18, 16), 0, 'YXZ');
 
 /**
- * A ring of low-poly badges, one per skill, each in its own warm tint. Decoration, so it is
- * instanced (one draw call); the skill names themselves live in the HTML card.
+ * A ring of low-poly badges, one per skill, each in its own warm tint, riding a thin brass
+ * ring. Decoration, so the badges are instanced (one draw call, the ring a second); the skill
+ * names themselves live in the HTML card.
  */
 export function skillOrbit(tints: PaletteKey[]): SkillOrbit {
   const total = tints.length;
@@ -51,6 +56,12 @@ export function skillOrbit(tints: PaletteKey[]): SkillOrbit {
     emissiveIntensity: 0.5,
   });
   const mesh = new THREE.InstancedMesh(geometry, material, total);
+  // A unit ring in the xz plane, stretched to the orbit's radius each frame.
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(1, 0.05, 4, 48).rotateX(Math.PI / 2),
+    glow('brass', 0.6),
+  );
+  mesh.add(ring);
   // Instances move every frame, so a bounding sphere computed once would cull the ring wrongly.
   mesh.frustumCulled = false;
   const colour = new THREE.Color();
@@ -66,15 +77,17 @@ export function skillOrbit(tints: PaletteKey[]): SkillOrbit {
       const angle = i * spacing + turn;
       dummy.position.set(
         Math.sin(angle) * radius,
-        Math.sin(time * 1.3 + i) * 0.15,
+        Math.sin(time * 1.3 + i) * 0.06,
         Math.cos(angle) * radius,
       );
-      dummy.rotation.set(0.25, angle, 0);
+      dummy.rotation.copy(FACING);
       dummy.scale.setScalar(Math.max(tokenScale(i, local, total), 1e-4));
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     }
     mesh.count = shown;
+    ring.visible = shown > 0;
+    ring.scale.set(radius, 1, radius);
     mesh.instanceMatrix.needsUpdate = true;
   };
   update(0, 0);

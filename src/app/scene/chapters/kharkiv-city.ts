@@ -21,7 +21,10 @@ export function risingSkyline(tints: SkylineTints) {
         const delay = order.indexOf(layer.name) * 0.15;
         const k = smoothstep(delay, delay + 0.6, built);
         layer.visible = k > 0;
-        layer.scale.y = Math.max(k, 1e-3);
+        // The footprint gathers in with the first of the rise, so a barely-started city is a
+        // speck in the previous chapter's frame, not a full-width slab seen edge-on.
+        const footprint = Math.max(smoothstep(0, 0.25, k), 1e-3);
+        layer.scale.set(footprint, Math.max(k, 1e-3), footprint);
       }
     },
   };

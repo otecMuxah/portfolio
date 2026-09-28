@@ -144,7 +144,9 @@ export const krakow: ChapterBuilder = () => {
         const delay = i < 3 ? i * 0.08 : 0.2 + (i - 3) * 0.06;
         const k = smoothstep(delay, delay + 0.5, built);
         group.visible = k > 0;
-        group.scale.y = Math.max(k, 1e-3);
+        // Footprint first, as in kharkiv-city.ts: no flat slabs in the previous chapter's frame.
+        const footprint = Math.max(smoothstep(0, 0.25, k), 1e-3);
+        group.scale.set(footprint, Math.max(k, 1e-3), footprint);
       });
       const lit = smoothstep(0.85, 1, built) * (1 - 0.5 * leave(local));
       windows.visible = lit > 0;
