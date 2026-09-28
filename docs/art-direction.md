@@ -25,7 +25,7 @@ Author every scene in full colour. The phase grade (the drain in the war, the re
 - 1 unit = 1 m. Chapter anchors sit 40 m apart along the path; the engine places each scene at its anchor.
 - Build around your own origin. Footprint radius ≤ 14 m and height ≤ 22 m, so that neighbours never collide.
 - The camera sits 18 m in front and 6 m up, looking at y = 3. Put the subject's centre of interest at y ≈ 2–6.
-- Keep the lane in front of the subject (|x| < 3, z 4–14) clear for the car rig. Check it against `car-rig.ts` once #7 lands.
+- Keep the lane in front of the subject (|x| < 3, z 4–14) clear for the car rig. The car rides at the camera's framed point + `CAR_OFFSET` (2, 0, 6.5) in `scene-engine.ts`, so it moves with the camera and sits in this lane only around chapter-local progress 0.4–0.6.
 - Light: the engine provides a hemisphere fill plus a warm key from the upper left. A chapter may add **at most one** practical `PointLight` (CRT, candles, windows); otherwise use emissive materials.
 
 ## Motion
