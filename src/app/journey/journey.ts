@@ -1,7 +1,7 @@
-import { CARS, CHAPTERS, Car, Chapter, Phase } from '../content/life';
+import { CARS, CHAPTERS, Car, Chapter, ChapterId, Phase } from '../content/life';
 
 export interface JourneyState {
-  chapterId: string;
+  chapterId: ChapterId;
   carId: string | null;
   phase: Phase;
 }
@@ -38,5 +38,6 @@ const SPANS = chapterSpans();
 
 export function journeyAt(progress: number): JourneyState {
   const { chapter } = spanAt(SPANS, progress);
-  return { chapterId: chapter.id, carId: carFor(chapter.year)?.id ?? null, phase: chapter.phase };
+  const carId = chapter.year === undefined ? null : (carFor(chapter.year)?.id ?? null);
+  return { chapterId: chapter.id, carId, phase: chapter.phase };
 }

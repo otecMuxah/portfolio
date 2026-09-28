@@ -1,11 +1,38 @@
 <canvas #canvas class="scene" aria-hidden="true"></canvas>
 
+<button type="button" class="skip-cv" (click)="cv.open()">Skip to CV</button>
+<app-cv-view #cv />
+
+<nav #nav class="timeline" aria-label="Timeline">
+  <ol class="timeline__list">
+    @for (item of timeline; track item.id) {
+      <li>
+        <a
+          class="timeline__item"
+          [href]="'#' + item.id"
+          [attr.aria-current]="item.id === state().chapterId ? 'step' : null"
+          (click)="onTimelineClick($event, item.id)"
+        >
+          @if (item.year) {
+            <span class="timeline__year">{{ item.year }}</span>
+          }
+          <span class="timeline__label">{{ item.label }}</span>
+        </a>
+      </li>
+    }
+  </ol>
+</nav>
+
 <main #track class="track" [style.height]="trackHeight">
+  <app-hero />
   <article class="card" aria-live="polite">
-    <p class="card__meta">
-      {{ chapter().year }}@if (chapter().yearEnd) { – {{ chapter().yearEnd }}} · {{ chapter().place }}
-    </p>
-    <h2 class="card__title">{{ chapter().title }}</h2>
-    <p class="card__body">{{ chapter().body }}</p>
+    @if (text().placeholder) {
+      <p class="card__flag">Placeholder text: Mykhailo’s own words to come</p>
+    }
+    @if (meta()) {
+      <p class="card__meta">{{ meta() }}</p>
+    }
+    <h2 class="card__title">{{ text().title }}</h2>
+    <p class="card__body">{{ text().body }}</p>
   </article>
 </main>

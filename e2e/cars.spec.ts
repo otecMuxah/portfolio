@@ -20,7 +20,7 @@ test('the car carrying the camera follows the years', async ({ page }) => {
   page.on('pageerror', (err) => errors.push(err.message));
   await page.goto('/');
 
-  const before2003 = CHAPTERS.filter((c) => c.year < 2003);
+  const before2003 = CHAPTERS.filter((c) => c.year !== undefined && c.year < 2003);
   expect(before2003.length).toBeGreaterThan(0);
   for (const chapter of before2003) {
     await scrollToChapter(page, chapter);
