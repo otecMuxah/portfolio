@@ -63,3 +63,5 @@ For more information on using the Angular CLI, including detailed command refere
 Every push to `develop` runs the unit tests, builds with `--base-href /portfolio/` and deploys to GitHub Pages at https://otecmuxah.github.io/portfolio/ (`.github/workflows/deploy.yml`).
 
 **Custom domain later:** add the domain under repo Settings → Pages → Custom domain (GitHub commits a `CNAME` file), point a DNS `CNAME` record at `otecmuxah.github.io`, and change the workflow's `--base-href /portfolio/` to `--base-href /`.
+
+**Link-preview image:** `public/og-image.png` is a 1200×630 still of the hero scene. After changing the hero or its scene, regenerate it with `npm run og-image` (starts the dev server, captures, writes the file) and commit it. The canonical, Open Graph and Twitter tags in `src/index.html` use absolute `https://otecmuxah.github.io/portfolio/` URLs; change them too when a custom domain is added.

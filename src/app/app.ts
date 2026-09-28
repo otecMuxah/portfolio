@@ -34,6 +34,7 @@ const isChapterId = (id: string): id is ChapterId => CHAPTERS.some((c) => c.id =
     '[attr.data-chapter]': 'state().chapterId',
     '[attr.data-car]': 'state().carId ?? "none"',
     '[attr.data-phase]': 'state().phase',
+    '[attr.data-scene]': 'loaded() < 1 ? "loading" : "ready"',
     '(window:keydown)': 'onKey($event)',
   },
 })
@@ -42,6 +43,9 @@ export class App {
   private readonly track = viewChild.required<ElementRef<HTMLElement>>('track');
   private readonly nav = viewChild.required<ElementRef<HTMLElement>>('nav');
 
+  /** How far the 3D scene has initialised, 0..1; the loader shows until it reaches 1. */
+  protected readonly loaded = signal(0);
+  protected readonly percent = computed(() => Math.round(this.loaded() * 100));
   protected readonly state = signal<JourneyState>(journeyAt(0), { equal: sameState });
   protected readonly chapter = computed(() => CHAPTERS.find((c) => c.id === this.state().chapterId)!);
   protected readonly text = computed(() => TEXT[this.state().chapterId]);
@@ -59,6 +63,7 @@ export class App {
     const destroyRef = inject(DestroyRef);
     afterNextRender(() => {
       const engine = new SceneEngine(this.canvas().nativeElement, SPANS);
+      engine.load((progress) => this.loaded.set(progress));
       const trigger = ScrollTrigger.create({
         trigger: this.track().nativeElement,
         start: 'top top',

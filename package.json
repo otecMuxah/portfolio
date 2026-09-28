@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "e2e": "playwright test",
-    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit && tsc -p tsconfig.e2e.json"
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit && tsc -p tsconfig.e2e.json",
+    "og-image": "playwright test -c scripts/og-image.config.ts"
   },
   "private": true,
   "packageManager": "npm@11.13.0",
@@ -18,7 +19,9 @@
     "@angular/core": "^22.2.0",
     "@angular/forms": "^22.2.0",
     "@angular/platform-browser": "^22.2.0",
+    "@angular/platform-server": "^22.2.0",
     "@angular/router": "^22.2.0",
+    "@angular/ssr": "^22.2.0",
     "gsap": "^3.15.0",
     "rxjs": "~7.8.0",
     "three": "^0.186.1",

@@ -12,11 +12,13 @@ export class SceneEngine {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly camera = new THREE.PerspectiveCamera(55, 1, 0.1, 500);
+  private readonly anchors: THREE.Vector3[];
   private readonly path: THREE.CatmullRomCurve3;
   private readonly resizeObserver: ResizeObserver;
-  private readonly chapterScenes: ChapterScene[];
+  private readonly chapterScenes: ChapterScene[] = [];
   private readonly clock = new THREE.Timer();
   private target = 0;
+  private disposed = false;
   private current = 0;
 
   constructor(
@@ -29,18 +31,33 @@ export class SceneEngine {
     this.scene.fog = new THREE.Fog('#0d0f14', 20, 90);
     this.scene.add(new THREE.HemisphereLight('#ffe8c7', '#1a1d26', 2));
 
-    const anchors = spans.map((_, i) => new THREE.Vector3(Math.sin(i) * 12, 0, -i * CHAPTER_GAP));
-    this.chapterScenes = spans.map(({ chapter }, i) => {
-      const built = CHAPTER_BUILDERS[chapter.scene](chapter, i);
-      built.object.position.add(anchors[i]);
-      this.scene.add(built.object);
-      return built;
-    });
-    this.path = new THREE.CatmullRomCurve3(anchors.map((a) => a.clone().add(CAMERA_OFFSET)));
+    this.anchors = spans.map((_, i) => new THREE.Vector3(Math.sin(i) * 12, 0, -i * CHAPTER_GAP));
+    this.path = new THREE.CatmullRomCurve3(this.anchors.map((a) => a.clone().add(CAMERA_OFFSET)));
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
     this.resize();
+  }
+
+  /**
+   * Builds each chapter's scene a frame at a time, compiles the shaders, then starts the loop.
+   * Reports progress 0..1 so the page can show a loader meanwhile.
+   */
+  async load(onProgress: (progress: number) => void): Promise<void> {
+    const steps = this.spans.length + 1;
+    for (const [i, { chapter }] of this.spans.entries()) {
+      const built = CHAPTER_BUILDERS[chapter.scene](chapter, i);
+      built.object.position.add(this.anchors[i]);
+      this.scene.add(built.object);
+      this.chapterScenes.push(built);
+      onProgress((i + 1) / steps);
+      await new Promise(requestAnimationFrame);
+      if (this.disposed) return;
+    }
+    await this.renderer.compileAsync(this.scene, this.camera);
+    if (this.disposed) return;
+    this.frame();
+    onProgress(1);
     this.renderer.setAnimationLoop(() => this.frame());
   }
 
@@ -50,6 +67,7 @@ export class SceneEngine {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.renderer.setAnimationLoop(null);
     this.resizeObserver.disconnect();
     this.scene.traverse((obj) => {
