@@ -4,6 +4,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CHAPTERS, CHAPTER_TEXT, Chapter, ChapterId } from './content/life';
 import { CvView } from './cv/cv-view';
+import { Garage } from './garage/garage';
 import { Hero } from './hero/hero';
 import { JourneyState, chapterSpans, journeyAt } from './journey/journey';
 import { SceneEngine } from './scene/scene-engine';
@@ -31,7 +32,7 @@ const isChapterId = (id: string): id is ChapterId => CHAPTERS.some((c) => c.id =
 
 @Component({
   selector: 'app-root',
-  imports: [Hero, CvView, NgTemplateOutlet],
+  imports: [Hero, CvView, Garage, NgTemplateOutlet],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   host: {

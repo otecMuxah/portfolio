@@ -14,7 +14,8 @@ export type SceneKind =
   | 'first-code'
   | 'kharkiv-career'
   | 'krakow'
-  | 'back-home';
+  | 'back-home'
+  | 'garage';
 
 export type ChapterId =
   | 'birth'
@@ -93,7 +94,7 @@ export const CHAPTERS: Chapter[] = [
   { id: 'war', year: 2022, phase: 'shatter', scene: 'placeholder' },
   { id: 'ciklum', year: 2022, yearEnd: 2024, phase: 'rebuild', scene: 'placeholder' },
   { id: 'iata', year: 2024, yearEnd: 'now', phase: 'rebuild', scene: 'placeholder' },
-  { id: 'garage', phase: 'garage', scene: 'placeholder' },
+  { id: 'garage', phase: 'garage', scene: 'garage' },
 ];
 
 export const CARS: Car[] = [

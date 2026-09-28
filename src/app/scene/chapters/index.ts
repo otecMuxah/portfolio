@@ -5,6 +5,7 @@ import { birth } from './birth';
 import { dreamweaver } from './dreamweaver';
 import { family } from './family';
 import { firstCode } from './first-code';
+import { garage } from './garage';
 import { kharkivCareer } from './kharkiv-career';
 import { krakow } from './krakow';
 import { lyceum } from './lyceum';
@@ -25,4 +26,5 @@ export const CHAPTER_BUILDERS: Record<SceneKind, ChapterBuilder> = {
   'kharkiv-career': kharkivCareer,
   krakow,
   'back-home': backHome,
+  garage,
 };
