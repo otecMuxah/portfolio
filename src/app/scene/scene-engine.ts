@@ -101,16 +101,19 @@ export class SceneEngine {
     if (this.disposed) return;
     this.frame();
     this.renderer.setAnimationLoop(() => this.frame());
-    // Dev builds only (stripped from prod): lets e2e read GPU memory and wait for the eased camera to settle,
-    // and, once the war's shards exist, read their budget and the last frame's draw calls.
+    // Dev builds only (stripped from prod): lets e2e read GPU memory, wait for the eased camera to settle
+    // or every chapter (and the war's shards) to build, snap the camera to a progress so repeated passes draw the
+    // same frames, and read the shards' budget and the last frame's draw calls.
     if (typeof ngDevMode !== 'undefined' && ngDevMode) {
       Object.assign(window, {
         __sceneInfo: () => ({
           ...this.renderer.info.memory,
           settled: Math.abs(this.target - this.current) < 1e-4,
+          built: this.chapterScenes.filter(Boolean).length === this.spans.length && (!this.war || !!this.shatter),
           shatter: this.shatter?.stats,
           frame: { ...this.renderer.info.render },
         }),
+        __sceneJump: (progress: number) => (this.target = this.current = progress),
       });
     }
     onProgress(1);

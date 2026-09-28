@@ -10,10 +10,20 @@ interface SceneInfo {
   geometries: number;
   textures: number;
   settled: boolean;
+  built: boolean;
 }
 
 /** The dev-build readout from the scene engine (see scene-engine.ts); absent from production bundles. */
 const sceneInfo = (page: Page) => page.evaluate(() => (window as unknown as { __sceneInfo: () => SceneInfo }).__sceneInfo());
+
+/** Scrolls, snaps the eased camera there and lets it render, so every pass draws exactly the same frames. */
+async function snapTo(page: Page, progress: number): Promise<void> {
+  await scrollJourney(page, progress);
+  await page.evaluate(async (p) => {
+    (window as unknown as { __sceneJump: (p: number) => void }).__sceneJump(p);
+    for (let i = 0; i < 2; i++) await new Promise(requestAnimationFrame);
+  }, progress);
+}
 
 /** Waits for the eased camera to reach the scroll position (slow on the test browser's software GPU), then shoots the canvas. */
 async function shoot(page: Page, name: string): Promise<Buffer> {
@@ -102,6 +112,7 @@ test('two full scroll passes allocate no new GPU geometry or textures', async ({
   const errors = collectErrors(page);
   await visit(page, '/');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
+  await expect.poll(async () => (await sceneInfo(page)).built, { timeout: 15_000 }).toBe(true);
 
   const sample = async () => {
     const { geometries, textures } = await sceneInfo(page);
@@ -113,12 +124,10 @@ test('two full scroll passes allocate no new GPU geometry or textures', async ({
   // Down and back up through every chapter, pausing on each so the camera renders it.
   const pass = async () => {
     for (let i = 0; i <= 28; i++) {
-      await scrollJourney(page, i / 28);
-      await page.waitForTimeout(80);
+      await snapTo(page, i / 28);
     }
     for (let i = 28; i >= 0; i--) {
-      await scrollJourney(page, i / 28);
-      await page.waitForTimeout(80);
+      await snapTo(page, i / 28);
     }
     return sample();
   };

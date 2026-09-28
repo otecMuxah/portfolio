@@ -41,6 +41,24 @@
   </nav>
 }
 
+<button
+  type="button"
+  class="sound"
+  data-sound-toggle
+  [attr.aria-pressed]="sound.on()"
+  (click)="sound.toggle()"
+>
+  <svg class="sound__icon" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 9h4l5-4v14l-5-4H4z" />
+    @if (sound.on()) {
+      <path class="sound__wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11" />
+    } @else {
+      <path class="sound__wave" d="M16 9l6 6M22 9l-6 6" />
+    }
+  </svg>
+  Sound
+</button>
+
 <main
   #track
   class="track"
