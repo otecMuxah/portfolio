@@ -91,8 +91,8 @@ test('data-phase is rebuild and the car is the F30 through Ciklum and IATA, forw
   const errors = collectErrors(page);
   await visit(page, '/');
 
-  const forward = await scan(page, at('war', 0.5), at('garage', 0.5));
-  const back = await scan(page, at('garage', 0.5), at('war', 0.5));
+  const forward = await scan(page, at('war', 0.5), 1);
+  const back = await scan(page, 1, at('war', 0.5));
   for (const [name, seen] of [['forward', forward], ['back', back]] as const) {
     for (const id of ['ciklum', 'iata']) expect(seen.some(([chapter]) => chapter === id), `${name} scan reaches ${id}`).toBe(true);
     for (const [chapter, phase, car] of seen) {
@@ -125,7 +125,6 @@ test('the rebuild goes up by scroll and scrolling back returns the war exactly a
     ['iata', 0.2],
     ['iata', 0.5],
     ['iata', 0.9],
-    ['garage', 0.5],
   ];
   const shots: Buffer[] = [];
   for (const [i, [id, local]] of stops.entries()) {
@@ -161,11 +160,11 @@ test('two scroll passes through the rebuild allocate no new GPU geometry or text
     );
     return { geometries, textures, heapMB: heap === null ? null : Math.round((heap / 1048576) * 10) / 10 };
   };
-  // From the war's end through both rebuild chapters in steps, into the garage and back.
+  // From the war's end through both rebuild chapters in steps, to the end of the scroll and back.
   const stops = [
     at('war', 0.9),
     ...['ciklum', 'iata'].flatMap((id) => [0, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9].map((l) => at(id, l))),
-    at('garage', 0.5),
+    1,
   ];
   const pass = async () => {
     for (const p of [...stops, ...[...stops].reverse()]) await snapTo(page, p);

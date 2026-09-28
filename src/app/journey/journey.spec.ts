@@ -16,7 +16,6 @@ const ORDER = [
   'war',
   'ciklum',
   'iata',
-  'garage',
 ];
 
 const visitedInOrder = () => {
@@ -29,26 +28,25 @@ describe('journeyAt', () => {
     expect(journeyAt(0)).toEqual({ chapterId: 'birth', carId: null, phase: 'build' });
   });
 
-  it('ends the journey in the garage', () => {
-    expect(journeyAt(1)).toMatchObject({ chapterId: 'garage', phase: 'garage' });
+  it('ends the journey at IATA', () => {
+    expect(journeyAt(1)).toMatchObject({ chapterId: 'iata', phase: 'rebuild' });
   });
 
   it('clamps scroll overshoot to the first and last chapter', () => {
     expect(journeyAt(-0.2).chapterId).toBe('birth');
-    expect(journeyAt(1.3).chapterId).toBe('garage');
+    expect(journeyAt(1.3).chapterId).toBe('iata');
   });
 
-  it('visits all 14 chapters and then the garage exactly once, in order, across the scroll', () => {
+  it('visits all 14 chapters exactly once, in order, across the scroll', () => {
     expect(visitedInOrder().map((s) => s.chapterId)).toEqual(ORDER);
   });
 
-  it('builds through chapters 1–11, shatters in 12, rebuilds in 13–14 and ends in the garage', () => {
+  it('builds through chapters 1–11, shatters in 12, and rebuilds in 13–14', () => {
     expect(visitedInOrder().map((s) => s.phase)).toEqual([
       ...Array(11).fill('build'),
       'shatter',
       'rebuild',
       'rebuild',
-      'garage',
     ]);
   });
 
@@ -98,13 +96,10 @@ describe('the car carrying the camera', () => {
     expect(yearAt(spans, at('back-home', 0.5))).toBe(2022);
   });
 
-  it('holds the last dated chapter at its own year when only undated chapters follow', () => {
+  it('holds IATA, the last chapter, at its own year to the end of the scroll', () => {
     expect(yearAt(spans, at('iata', 0.99))).toBe(2024);
-  });
-
-  it('has no year and no car in the undated garage', () => {
-    expect(yearAt(spans, at('garage', 0.5))).toBeUndefined();
-    expect(journeyAt(at('garage', 0.5)).carId).toBeNull();
+    expect(yearAt(spans, 1)).toBe(2024);
+    expect(journeyAt(1).carId).toBe('f30');
   });
 
   it('swaps cars mid-chapter as the scrolled year passes each start year', () => {
@@ -124,7 +119,7 @@ describe('the car carrying the camera', () => {
     const distinct = (ids: (string | null)[]) => ids.filter((id, i) => i === 0 || id !== ids[i - 1]);
     const forward = distinct(Array.from({ length: 10001 }, (_, i) => journeyAt(i / 10000).carId));
     const backward = distinct(Array.from({ length: 10001 }, (_, i) => journeyAt(1 - i / 10000).carId));
-    expect(forward).toEqual([null, 'golf2', 'mazda323f', 'mazda3', 'forester', 'f30', null]);
+    expect(forward).toEqual([null, 'golf2', 'mazda323f', 'mazda3', 'forester', 'f30']);
     expect(backward).toEqual([...forward].reverse());
   });
 });
@@ -142,8 +137,8 @@ describe('chapter spans', () => {
 });
 
 describe('life content', () => {
-  it('dates every chapter but the garage', () => {
-    expect(CHAPTERS.filter((c) => c.year === undefined).map((c) => c.id)).toEqual(['garage']);
+  it('dates every chapter', () => {
+    expect(CHAPTERS.filter((c) => c.year === undefined).map((c) => c.id)).toEqual([]);
   });
 
   it('lists dated chapters in chronological order', () => {

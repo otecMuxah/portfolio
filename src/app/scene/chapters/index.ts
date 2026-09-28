@@ -6,7 +6,6 @@ import { ciklum } from './ciklum';
 import { dreamweaver } from './dreamweaver';
 import { family } from './family';
 import { firstCode } from './first-code';
-import { garage } from './garage';
 import { iata } from './iata';
 import { kharkivCareer } from './kharkiv-career';
 import { krakow } from './krakow';
@@ -34,5 +33,4 @@ export const CHAPTER_BUILDERS: Record<SceneKind, ChapterBuilder> = {
   war,
   ciklum,
   iata,
-  garage,
 };

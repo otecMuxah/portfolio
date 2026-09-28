@@ -130,17 +130,12 @@ export const EN: Record<ChapterId, ChapterText> = {
     label: 'Ciklum',
     place: 'Aschaffenburg, Bavaria',
     title: 'Ciklum: starting from scratch',
-    body: 'Hired by Ciklum on 12 Feb 2022, twelve days before the war, and kept the job through the escape. Rebuilt life in Aschaffenburg. Lead Frontend Developer on Redstor (2022–2023), then Senior Frontend Developer on Deloitte (2023–2024).',
+    body: 'Hired by Ciklum on 12 Feb 2022, twelve days before the war, and kept the job through the escape. Rebuilt life in Aschaffenburg. A house by the forest, the castle over the Main. Lead Frontend Developer on Redstor (2022–2023), then Senior Frontend Developer on Deloitte (2023–2024).',
   },
   iata: {
     label: 'IATA',
     place: 'Aschaffenburg, then Frankfurt',
     title: 'IATA',
     body: 'Senior Full-Stack Developer (contract), leading a team of 6 developers within a 50-person engineering organisation. AI-agent delivery across AMSS, ARM Index, ATMPM and ASPAC.',
-  },
-  garage: {
-    label: 'Garage',
-    title: 'The garage',
-    body: 'All five cars side by side: the red VW Golf 2, the red Mazda 323F, the blue Mazda 3, the green Subaru Forester and the black BMW 320d F30. Fixing, racing and cleaning cars.',
   },
 };
