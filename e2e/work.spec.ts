@@ -121,13 +121,19 @@ test.describe('phone', () => {
       await visit(page, '/');
       await expect.poll(async () => (await sceneInfo(page)).built, { timeout: 30_000 }).toBe(true);
       await snapTo(page, stepProgress(id, k));
-      await expect(
-        page.locator('.card__company', { hasText: workSteps(id)[k].company }),
-      ).toBeVisible();
+      const company = page.locator('.card__company', { hasText: workSteps(id)[k].company });
+      // The card starts folded to its title, leaving the scene to the sign and the ring.
+      await expect(company).toBeHidden();
       await expect
         .poll(async () => (await sceneInfo(page)).settled, { timeout: 15_000 })
         .toBe(true);
       await page.screenshot({ path: `${EVIDENCE}/phone-${id}-${k + 1}.png` });
+      await page.getByRole('button', { name: 'Chapter details' }).click();
+      await expect(company).toBeVisible();
+      await page
+        .locator('.card')
+        .evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
+      await page.screenshot({ path: `${EVIDENCE}/phone-${id}-${k + 1}-open.png` });
       expect(errors).toEqual([]);
     });
   }

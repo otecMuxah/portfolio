@@ -2,6 +2,7 @@ import { Component, DestroyRef, ElementRef, Injector, afterNextRender, computed,
 import { NgTemplateOutlet } from '@angular/common';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { CardToggle } from './card/card-toggle';
 import { CHAPTERS, CHAPTER_TEXT, Chapter, ChapterId, DOMAIN_TEXT } from './content/life';
 import { CvView } from './cv/cv-view';
 import { Hero } from './hero/hero';
@@ -31,7 +32,7 @@ const isChapterId = (id: string): id is ChapterId => CHAPTERS.some((c) => c.id =
 
 @Component({
   selector: 'app-root',
-  imports: [Hero, CvView, NgTemplateOutlet],
+  imports: [Hero, CvView, NgTemplateOutlet, CardToggle],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   host: {
@@ -63,6 +64,8 @@ export class App {
   protected readonly chapter = computed(() => CHAPTERS.find((c) => c.id === this.state().chapterId)!);
   protected readonly text = computed(() => TEXT[this.state().chapterId]);
   protected readonly meta = computed(() => metaOf(this.chapter()));
+  /** Phones show the card collapsed to its title until opened; the choice holds across chapters, not reloads. */
+  protected readonly cardOpen = signal(false);
   protected readonly timeline = CHAPTERS.map((c) => ({ id: c.id, year: c.year, label: TEXT[c.id].label }));
   protected readonly trackHeight = `${CHAPTERS.reduce((sum, c) => sum + (c.scrollWeight ?? 1), 0) * 100}vh`;
 
