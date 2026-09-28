@@ -25,8 +25,8 @@ test('screen readers get every chapter in order, once, while the 3D journey runs
 }) => {
   await page.goto('/');
   await expect(page.locator('canvas.scene')).toBeVisible();
-  await expect(story(page).getByRole('listitem').getByRole('heading')).toHaveText(TITLES);
-  await expect(story(page).getByRole('listitem').nth(10)).toContainText('4 a.m. Explosions.');
+  await expect(story(page).getByRole('heading', { level: 2 })).toHaveText(TITLES);
+  await expect(story(page).locator('> li').nth(10)).toContainText('4 a.m. Explosions.');
   await expect(page.getByRole('heading', { level: 2 })).toHaveCount(TITLES.length);
 });
 
@@ -78,7 +78,7 @@ test.describe('without WebGL', () => {
     await expect(page.locator('canvas.scene')).toHaveCount(0);
     await expect(page.locator('app-root')).toHaveAttribute('data-scene', 'fallback');
     await expect(page.getByRole('progressbar')).toHaveCount(0);
-    const headings = story(page).getByRole('listitem').getByRole('heading');
+    const headings = story(page).getByRole('heading', { level: 2 });
     await expect(headings).toHaveText(TITLES);
     for (const heading of await headings.all()) {
       await heading.scrollIntoViewIfNeeded();
