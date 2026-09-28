@@ -9,6 +9,7 @@ import { LIGHT } from './chapters/war';
 import { GRADE_UNIFORMS, dawnAt, gradeAll, gradeAt, gradeColor } from './grade';
 import { f30Assembled } from './rebuild';
 import { Shatter, shakeAt } from './shatter';
+import { withWorkLayer } from './work/work-layer';
 
 /** The camera travels a road beside the scenes, framing each subject from the front-right (a 3/4 view). */
 const CAMERA_OFFSET = new THREE.Vector3(18, 7, 16);
@@ -173,7 +174,7 @@ export class SceneEngine {
 
   private build(index: number): THREE.Object3D {
     const { chapter } = this.spans[index];
-    const built = CHAPTER_BUILDERS[chapter.scene](chapter, index);
+    const built = withWorkLayer(CHAPTER_BUILDERS[chapter.scene](chapter, index), chapter);
     gradeAll(built.object);
     built.object.position.add(this.anchors[index]);
     this.scene.add(built.object);

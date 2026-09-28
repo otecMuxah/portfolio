@@ -3,12 +3,13 @@ import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { CHAPTERS, ChapterId } from '../../content/life';
 import { ChapterScene } from '../chapter-scene';
+import { withWorkLayer } from '../work/work-layer';
 import { CHAPTER_BUILDERS } from '.';
 
-/** Builds a chapter's scene, as the engine would. */
+/** Builds a chapter's scene, as the engine would: with its work layer. */
 export function build(id: ChapterId): ChapterScene {
   const index = CHAPTERS.findIndex((c) => c.id === id);
-  return CHAPTER_BUILDERS[CHAPTERS[index].scene](CHAPTERS[index], index);
+  return withWorkLayer(CHAPTER_BUILDERS[CHAPTERS[index].scene](CHAPTERS[index], index), CHAPTERS[index]);
 }
 
 /** Builds a chapter's scene and poses it at a local progress. */
@@ -90,11 +91,18 @@ export const ROAD_SIDE = new THREE.Box3(
   new THREE.Vector3(Infinity, Infinity, Infinity),
 );
 
-/** jsdom has no 2D canvas; the halo gradient only needs somewhere to draw. */
+/** jsdom has no 2D canvas; the halo gradient and the work layer's lettering only need somewhere to draw. */
 export function stubCanvas(): void {
   const ctx = {
     createRadialGradient: () => ({ addColorStop: () => undefined }),
     fillRect: () => undefined,
+    strokeRect: () => undefined,
+    fillText: () => undefined,
+    // Roughly as wide as bold type: 0.55 em per character.
+    measureText(this: { font: string }, text: string) {
+      return { width: text.length * parseFloat(this.font.split(' ')[1] ?? '10') * 0.55 };
+    },
+    font: '700 10px sans-serif',
   };
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as never);
 }

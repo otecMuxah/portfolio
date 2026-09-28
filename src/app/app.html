@@ -80,7 +80,7 @@
         <ng-container
           *ngTemplateOutlet="
             career;
-            context: { roles: item.roles, skills: item.skills, block: 'story' }
+            context: { roles: item.roles, block: 'story' }
           "
         />
       </li>
@@ -99,30 +99,33 @@
       <ng-container
         *ngTemplateOutlet="
           career;
-          context: { roles: text().roles, skills: text().skills, block: 'card' }
+          context: { roles: text().roles, block: 'card' }
         "
       />
     </article>
   }
 </main>
 
-<ng-template #career let-roles="roles" let-skills="skills" let-block="block">
+<ng-template #career let-roles="roles" let-block="block">
   @for (job of roles ?? []; track job.company) {
     <section [class]="block + '__role'">
       <h3 [class]="block + '__company'">{{ job.company }}</h3>
-      <p [class]="block + '__position'">{{ job.role }} · {{ job.years }}</p>
+      <p [class]="block + '__position'">
+        {{ job.role }}@if (job.via) { via {{ job.via }}} · {{ job.years }}
+      </p>
+      @if (job.domain) {
+        <p [class]="block + '__domain'">{{ domains[job.domain] }}</p>
+      }
       <ul [class]="block + '__highlights'">
         @for (line of job.highlights; track line) {
           <li>{{ line }}</li>
         }
       </ul>
+      <ul [class]="block + '__skills'" [attr.aria-label]="'Technologies at ' + job.company">
+        @for (tech of job.tech; track tech) {
+          <li>{{ tech }}</li>
+        }
+      </ul>
     </section>
-  }
-  @if (skills) {
-    <ul [class]="block + '__skills'" aria-label="Skills">
-      @for (skill of skills; track skill) {
-        <li>{{ skill }}</li>
-      }
-    </ul>
   }
 </ng-template>

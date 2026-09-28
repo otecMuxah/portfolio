@@ -284,7 +284,7 @@
   }
 }
 
-// Career roles and skills, shared by the chapter card and the story list.
+// Career roles, their domains and stacks, shared by the chapter card and the story list.
 .card,
 .story {
   &__role {
@@ -302,6 +302,14 @@
     opacity: 0.75;
   }
 
+  &__domain {
+    margin: 0.1rem 0 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+
   &__highlights {
     margin: 0.25rem 0 0;
     padding-left: 1.1rem;
@@ -313,7 +321,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
-    margin: 0.75rem 0 0;
+    margin: 0.4rem 0 0;
     padding: 0;
     list-style: none;
 
