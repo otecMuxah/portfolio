@@ -1,14 +1,5 @@
-import { Page, expect, test } from '@playwright/test';
-
-const root = 'app-root';
-
-/** Scroll the journey to a progress between 0 and 1. */
-async function scrollJourney(page: Page, progress: number) {
-  await page.evaluate((p) => {
-    const max = document.documentElement.scrollHeight - innerHeight;
-    window.scrollTo(0, max * p);
-  }, progress);
-}
+import { expect, test } from '@playwright/test';
+import { root, scrollJourney, scrollToChapter } from './support';
 
 test('scrolling walks the visitor through each chapter in order', async ({ page }) => {
   const errors: string[] = [];
@@ -20,8 +11,7 @@ test('scrolling walks the visitor through each chapter in order', async ({ page 
   await expect(page.getByRole('heading', { name: 'Born in Kharkiv' })).toBeVisible();
   await expect(page.locator(root)).toHaveAttribute('data-car', 'none');
 
-  await scrollJourney(page, 0.5);
-  await expect(page.locator(root)).toHaveAttribute('data-chapter', 'first-code');
+  await scrollToChapter(page, 'first-code');
   await expect(page.getByRole('heading', { name: 'Self-taught, first job' })).toBeVisible();
   await expect(page.locator(root)).toHaveAttribute('data-car', 'forester');
 
