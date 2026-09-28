@@ -4,6 +4,9 @@
     <p class="cv__name">{{ profile.name }}</p>
     <p class="cv__role">{{ profile.title }} · {{ profile.stack }}</p>
     <p class="cv__meta">{{ profile.location }} · {{ profile.languages }}</p>
+    <p class="cv__meta">
+      Work authorisation: {{ profile.workAuthorisation }} · Availability: {{ profile.availability }}
+    </p>
     <ul class="cv__contacts" aria-label="Contact">
       @for (c of contacts; track c.label) {
         <li>
@@ -23,7 +26,9 @@
     <button type="button" class="cv__close" (click)="close()">Close</button>
   </header>
 
-  <p>{{ summary }}</p>
+  @for (p of summary; track p) {
+    <p>{{ p }}</p>
+  }
 
   <h3>Experience</h3>
   @for (role of roles; track role.company) {
