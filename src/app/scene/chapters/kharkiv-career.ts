@@ -16,7 +16,9 @@ const TINTS: PaletteKey[] = [
   'candle',
   'brick',
 ];
-const RING_Y = 12.5;
+// Around the top of Derzhprom's tower (its spire tops out near 10 m), centred on the tower.
+const RING_Y = 9.5;
+const RING_Z = -2.1;
 
 /**
  * 2015–2021, the Kharkiv career years: the skyline in terracotta and wheat, with a ring of
@@ -34,7 +36,7 @@ export const kharkivCareer: ChapterBuilder = () => {
 
   const skills = CHAPTER_TEXT.en['kharkiv-career'].skills ?? [];
   const orbit = skillOrbit(skills.map((_, i) => TINTS[i % TINTS.length]));
-  orbit.object.position.y = RING_Y;
+  orbit.object.position.set(0, RING_Y, RING_Z);
   object.add(skyline, windows, orbit.object);
 
   return {

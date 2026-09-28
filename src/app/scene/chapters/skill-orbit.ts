@@ -48,7 +48,7 @@ export function skillOrbit(tints: PaletteKey[]): SkillOrbit {
     flatShading: true,
     roughness: 0.55,
     emissive: PALETTE.homeGlow,
-    emissiveIntensity: 0.25,
+    emissiveIntensity: 0.5,
   });
   const mesh = new THREE.InstancedMesh(geometry, material, total);
   // Instances move every frame, so a bounding sphere computed once would cull the ring wrongly.
