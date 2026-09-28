@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { Page, expect, test } from '@playwright/test';
-import { chapterSpans } from '../src/app/journey/journey';
+import { chapterSpans, journeyAt } from '../src/app/journey/journey';
 import { collectErrors, root, scrollJourney, visit } from './support';
 
 const EVIDENCE = 'docs/analysis/9-evidence';
@@ -9,6 +9,7 @@ interface SceneInfo {
   geometries: number;
   textures: number;
   settled: boolean;
+  built: boolean;
   shatter?: { triangles: number; shards: number; particles: number; drawCalls: number };
   frame: { calls: number; triangles: number; points: number };
 }
@@ -68,8 +69,16 @@ async function phasesWhileScrolling(page: Page, direction: 'forward' | 'back'): 
 }
 
 /** The shards are built once every chapter has; wait for them. */
-const shardsReady = (page: Page) =>
-  expect.poll(async () => (await sceneInfo(page)).shatter?.triangles ?? 0, { timeout: 20_000 }).toBeGreaterThan(0);
+const shardsReady = (page: Page) => expect.poll(async () => (await sceneInfo(page)).built, { timeout: 20_000 }).toBe(true);
+
+/** Scrolls, snaps the eased camera there and lets it render, so every pass draws exactly the same frames. */
+async function snapTo(page: Page, progress: number): Promise<void> {
+  await scrollJourney(page, progress);
+  await page.evaluate(async (p) => {
+    (window as unknown as { __sceneJump: (p: number) => void }).__sceneJump(p);
+    for (let i = 0; i < 2; i++) await new Promise(requestAnimationFrame);
+  }, progress);
+}
 
 test.use({ viewport: { width: 1440, height: 900 } });
 test.beforeAll(() => mkdirSync(EVIDENCE, { recursive: true }));
@@ -143,13 +152,17 @@ test('two full scroll passes through the war allocate no new GPU geometry or tex
     );
     return { geometries, textures, heapMB: heap === null ? null : Math.round((heap / 1048576) * 10) / 10 };
   };
-  const stops = [0, at('back-home', 0.5), ...[0, 0.2, 0.4, 0.6, 0.8, 1].map((l) => at('war', l)), at('ciklum', 0.5), 1];
+  // Every chapter, so no pass draws one only in passing, and the war in steps.
+  const stops = chapterSpans().flatMap(({ chapter }) =>
+    chapter.phase === 'shatter' ? [0, 0.2, 0.4, 0.6, 0.8, 1].map((l) => at('war', l)) : [at(chapter.id, 0.5)],
+  );
   const pass = async () => {
+    let car = journeyAt(0).carId;
     for (const p of [...stops, ...[...stops].reverse()]) {
-      await scrollJourney(page, p);
-      await page.waitForTimeout(150);
-      // The garage's cars only appear once the eased camera gets there: let it arrive before turning back.
-      if (p === 1) await expect.poll(async () => (await sceneInfo(page)).settled, { timeout: 20_000 }).toBe(true);
+      await snapTo(page, p);
+      // The rig swaps cars over 0.9 s of clock time (and carries none from the war on): let a new one land.
+      if (journeyAt(p).carId !== car && p <= at('war', 0)) await page.waitForTimeout(1000);
+      car = journeyAt(p).carId;
     }
     return sample();
   };

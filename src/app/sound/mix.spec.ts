@@ -15,7 +15,9 @@ describe('warSpan', () => {
   });
 
   it('follows the war chapter when its scroll weight grows', () => {
-    const heavier = CHAPTERS.map((c) => (c.phase === 'shatter' ? { ...c, scrollWeight: 3 } : c));
+    const heavier = CHAPTERS.map((c) =>
+      c.phase === 'shatter' ? { ...c, scrollWeight: (c.scrollWeight ?? 1) + 2 } : c,
+    );
     const grown = warSpan(chapterSpans(heavier));
     expect(grown.end - grown.start).toBeGreaterThan(war.end - war.start);
   });
