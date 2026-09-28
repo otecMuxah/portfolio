@@ -5,12 +5,17 @@ const skipToCv = (page: Page) => page.getByRole('button', { name: 'Skip to CV' }
 async function expectCvShown(page: Page) {
   const cv = page.getByRole('dialog', { name: 'CV' });
   await expect(cv).toBeVisible();
-  await expect(cv.getByRole('heading', { name: /International Air Transport Association/ })).toBeVisible();
+  await expect(
+    cv.getByRole('heading', { name: /International Air Transport Association/ }),
+  ).toBeVisible();
   await expect(cv.getByText('2024 - Present')).toBeVisible();
   await expect(cv.getByText(/delivered 138 Jira stories/i)).toBeVisible();
   await expect(cv.getByRole('heading', { name: /Webholder/ })).toBeAttached();
   await expect(cv.getByText(/Java 25, Spring Boot 4/)).toBeAttached();
-  await expect(cv.getByRole('link', { name: 'otecmuxah@gmail.com' })).toHaveAttribute('href', 'mailto:otecmuxah@gmail.com');
+  await expect(cv.getByRole('link', { name: 'otecmuxah@gmail.com' })).toHaveAttribute(
+    'href',
+    'mailto:otecmuxah@gmail.com',
+  );
 }
 
 test('the hero names Mykhailo, his title and his age as of today', async ({ page }) => {
@@ -38,22 +43,33 @@ test('Skip to CV opens the CV view from the hero', async ({ page }) => {
 
 test('Skip to CV opens the CV view from mid-journey', async ({ page }) => {
   await page.goto('/');
-  await page.evaluate(() => window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * 0.5));
+  await page.evaluate(() =>
+    window.scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * 0.5),
+  );
   await expect(page.locator('app-root')).toHaveAttribute('data-chapter', 'first-code');
   await expect(skipToCv(page)).toBeInViewport();
   await skipToCv(page).click();
   await expectCvShown(page);
 });
 
-test('contact links are email, LinkedIn and GitHub, and no phone number is rendered', async ({ page }) => {
+test('contact links are email, LinkedIn and GitHub, and no phone number is rendered', async ({
+  page,
+}) => {
   await page.goto('/');
   const contacts = page.getByRole('list', { name: 'Contact' }).first();
-  await expect(contacts.getByRole('link', { name: 'Email' })).toHaveAttribute('href', 'mailto:otecmuxah@gmail.com');
+  await expect(contacts.getByRole('link', { name: 'Email' })).toHaveAttribute(
+    'href',
+    'mailto:otecmuxah@gmail.com',
+  );
+  await expect(contacts.getByRole('link', { name: 'Email' })).not.toHaveAttribute('target');
   await expect(contacts.getByRole('link', { name: 'LinkedIn' })).toHaveAttribute(
     'href',
     'https://www.linkedin.com/in/mykhailo-maliavin',
   );
-  await expect(contacts.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', 'https://github.com/otecMuxah');
+  await expect(contacts.getByRole('link', { name: 'GitHub' })).toHaveAttribute(
+    'href',
+    'https://github.com/otecMuxah',
+  );
 
   await skipToCv(page).click();
   await expectCvShown(page);

@@ -10,7 +10,14 @@ import { ageOn } from './age';
     <p class="hero__title">{{ profile.title }}</p>
     <ul class="hero__contacts" aria-label="Contact">
       @for (c of contacts; track c.label) {
-        <li><a [href]="c.href" rel="noopener" target="_blank">{{ c.label }}</a></li>
+        <li>
+          <a
+            [href]="c.href"
+            rel="noopener"
+            [attr.target]="c.href.startsWith('http') ? '_blank' : null"
+            >{{ c.label }}</a
+          >
+        </li>
       }
     </ul>
   `,

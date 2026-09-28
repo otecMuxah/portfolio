@@ -6,7 +6,15 @@
     <p class="cv__meta">{{ profile.location }} · {{ profile.languages }}</p>
     <ul class="cv__contacts" aria-label="Contact">
       @for (c of contacts; track c.label) {
-        <li>{{ c.label }}: <a [href]="c.href" rel="noopener" target="_blank">{{ c.text }}</a></li>
+        <li>
+          {{ c.label }}:
+          <a
+            [href]="c.href"
+            rel="noopener"
+            [attr.target]="c.href.startsWith('http') ? '_blank' : null"
+            >{{ c.text }}</a
+          >
+        </li>
       }
     </ul>
     <button type="button" class="cv__close" (click)="close()">Close</button>
@@ -19,7 +27,10 @@
     <section class="cv__job">
       <h4 class="cv__job-title">{{ role.title }} · {{ role.company }}</h4>
       <p class="cv__meta">
-        <span>{{ role.dates }}</span> · {{ role.location }}@if (role.note) { · {{ role.note }}}
+        <span>{{ role.dates }}</span> · {{ role.location }}
+        @if (role.note) {
+          · {{ role.note }}
+        }
       </p>
       <ul>
         @for (h of role.highlights; track h) {
