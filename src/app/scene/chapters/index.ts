@@ -3,6 +3,7 @@ import { ChapterBuilder } from '../chapter-scene';
 import { birth } from './birth';
 import { dreamweaver } from './dreamweaver';
 import { family } from './family';
+import { garage } from './garage';
 import { lyceum } from './lyceum';
 import { placeholder } from './placeholder';
 import { school } from './school';
@@ -17,4 +18,5 @@ export const CHAPTER_BUILDERS: Record<SceneKind, ChapterBuilder> = {
   university,
   dreamweaver,
   family,
+  garage,
 };
