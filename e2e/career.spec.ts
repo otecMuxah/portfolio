@@ -62,13 +62,18 @@ for (const [i, { id, title, company }] of CAREER.entries()) {
   });
 }
 
-test('the Kharkiv career card lists the skills that orbit the skyline', async ({ page }) => {
+test('the Kharkiv career card lists the stack of each company, as the ring around the skyline does', async ({
+  page,
+}) => {
   await page.goto('/#kharkiv-career');
   const onCard = page.locator('.card__skills');
-  await expect(onCard).toBeVisible();
-  for (const skill of ['Angular', 'TypeScript', 'RxJS']) await expect(onCard).toContainText(skill);
+  await expect(onCard).toHaveCount(3);
+  for (const skill of ['Angular', 'TypeScript', 'RxJS'])
+    await expect(onCard.nth(1)).toContainText(skill);
   // The screen-reader story carries the same list.
-  await expect(page.getByRole('list', { name: 'Skills' })).toContainText('RxJS');
+  await expect(page.getByRole('list', { name: 'Technologies at Eastern Peak' })).toContainText(
+    'RxJS',
+  );
 });
 
 test('two full scroll passes through the career chapters allocate no new GPU geometry or textures', async ({

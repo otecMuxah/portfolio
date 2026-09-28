@@ -12,6 +12,7 @@ import { CAMERA_OFFSET, CAR_OFFSET, cameraPath, carFrom, pathT, roadStops } from
 import { RiderRig } from './rider-rig';
 import { Road } from './road';
 import { Shatter, shakeAt } from './shatter';
+import { withWorkLayer } from './work/work-layer';
 
 const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
 /**
@@ -242,7 +243,7 @@ export class SceneEngine {
 
   private build(index: number): THREE.Object3D {
     const { chapter } = this.spans[index];
-    const built = CHAPTER_BUILDERS[chapter.scene](chapter, index);
+    const built = withWorkLayer(CHAPTER_BUILDERS[chapter.scene](chapter, index), chapter);
     gradeAll(built.object);
     built.object.position.add(this.anchors[index]);
     this.scene.add(built.object);

@@ -3,7 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CardToggle } from './card/card-toggle';
-import { CHAPTERS, CHAPTER_TEXT, Chapter, ChapterId } from './content/life';
+import { CHAPTERS, CHAPTER_TEXT, Chapter, ChapterId, DOMAIN_TEXT } from './content/life';
 import { CvView } from './cv/cv-view';
 import { Hero } from './hero/hero';
 import { JourneyState, chapterSpans, journeyAt } from './journey/journey';
@@ -55,6 +55,7 @@ export class App {
    */
   protected readonly webgl = signal(true);
   protected readonly story = CHAPTERS.map((c) => ({ ...TEXT[c.id], id: c.id, meta: metaOf(c) }));
+  protected readonly domains: Record<string, string> = DOMAIN_TEXT.en;
 
   /** How far the 3D scene has initialised, 0..1; the loader shows until it reaches 1. */
   protected readonly loaded = signal(0);
