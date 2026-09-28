@@ -1,5 +1,8 @@
 export type Phase = 'build' | 'shatter' | 'rebuild' | 'garage';
 
+/** Which builder renders a chapter's 3D scene (see scene/chapters). */
+export type SceneKind = 'placeholder';
+
 export interface Chapter {
   id: string;
   year: number;
@@ -8,6 +11,7 @@ export interface Chapter {
   title: string;
   body: string;
   phase: Phase;
+  scene: SceneKind;
   /** Relative scroll length; the war chapter gets more so it can't be skimmed. */
   scrollWeight?: number;
 }
@@ -28,6 +32,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'Born in Kharkiv',
     body: '26 May 1981.',
     phase: 'build',
+    scene: 'placeholder',
   },
   {
     id: 'first-code',
@@ -36,6 +41,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'Self-taught, first job',
     body: 'Started learning to code and landed a first job as a front-end developer at Webholder.',
     phase: 'build',
+    scene: 'placeholder',
   },
   {
     id: 'iata',
@@ -45,6 +51,7 @@ export const CHAPTERS: Chapter[] = [
     title: 'IATA',
     body: 'Senior Full-Stack Developer (contract), leading a team of 6 developers within a 50-person engineering organisation.',
     phase: 'rebuild',
+    scene: 'placeholder',
   },
 ];
 
