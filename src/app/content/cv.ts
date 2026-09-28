@@ -59,6 +59,16 @@ export const ROLES: Role[] = [
     ],
   },
   {
+    title: 'Senior Frontend Developer',
+    company: 'Ciklum',
+    location: 'Kyiv, Ukraine (remote)',
+    dates: '2022 - 2024',
+    note: 'client engagements below',
+    highlights: [
+      "Delivered Angular front ends over .NET services to enterprise clients as part of Ciklum's outsourced engineering practice, in a team of 8 working Agile with Azure DevOps - Redstor 2022 - 2023, Deloitte 2023 - 2024.",
+    ],
+  },
+  {
     title: 'Senior Frontend Developer (via Ciklum)',
     company: 'Deloitte',
     location: 'Kyiv, Ukraine (remote)',
