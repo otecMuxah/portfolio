@@ -41,12 +41,6 @@ This will compile your project and store the build artifacts in the `dist/` dire
 - Touch browser globals (`window`, `document`, `location`, `matchMedia`, WebGL, `new Date()` for anything shown) only inside `afterNextRender` or behind `isPlatformBrowser`. Anything rendered from them on the server is baked into the HTML at build time (the hero age is set in `afterNextRender` for that reason).
 - Chapter builders (`src/app/scene/chapters`) must be synchronous. `SceneEngine.load()` builds the first chapter, drops the loader, then builds one chapter per frame.
 
-## Sound
-
-Silent by default: no `AudioContext` exists until the visitor presses the "Sound" toggle (top left). The choice is kept in `localStorage` (`portfolio.sound`). A remembered "on" shows the toggle pressed, but browsers only let audio start after a user gesture, so it starts on the visitor's first click, tap or key press; scrolling alone doesn't count.
-
-**Soundtrack licence: procedurally generated, original.** `src/app/sound/soundscape.ts` synthesises everything with the Web Audio API; there are no audio files. The mix is a pure function of scroll progress (`src/app/sound/mix.ts`), derived from the war chapter's span, so reverse scrolling retraces it and a changed `scrollWeight` moves it along.
-
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:

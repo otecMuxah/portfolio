@@ -40,6 +40,16 @@ export const PALETTE = {
   skyBlue: '#7fb7e6',
   /** The sky the rebuild opens onto, in place of night: deep, cool, not yet day. */
   dawnSky: '#1b2c40',
+  /**
+   * Aschaffenburg (#48): the red Main sandstone of Schloss Johannisburg, the first strong warm colour after the war,
+   * and its shadowed terrace walls; slate roofs; the spruce and beech of the Spessart forest and its meadow.
+   */
+  mainSandstone: '#c65e41',
+  sandstoneShade: '#86402f',
+  slate: '#3b4454',
+  spruce: '#2b4a3a',
+  beech: '#5c7d3c',
+  meadow: '#48633a',
 
   concrete: '#6b6b6b',
 } as const;
