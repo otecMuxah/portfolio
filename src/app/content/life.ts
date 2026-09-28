@@ -71,22 +71,22 @@ export interface RoleCard {
   highlights: string[];
   /** The employer a client role was held through, as the CV names it ("via Ciklum"). */
   via?: string;
-  /** What the work was about, only where the CV states it; the scene shows its emblem. */
+  /** What the work was about, only where the CV or the owner states it; the scene shows its emblem. */
   domain?: Domain;
   /** The stack used at this step, taken from the CV; the card lists it and the scene's badges carry it. */
   tech: string[];
 }
 
-/** Domains the CV names for a career step; each has a low-poly emblem in the scene (scene/work). */
+/** Domains the CV (or the owner) names for a career step; each has a low-poly emblem in the scene (scene/work). */
 export type Domain =
   | 'tailoring'
   | 'edtech'
   | 'restaurants'
   | 'healthcare'
-  | 'finance-learning'
   | 'iot'
   | 'data-protection'
-  | 'aviation';
+  | 'aviation'
+  | 'fintech';
 
 export type Locale = 'en';
 

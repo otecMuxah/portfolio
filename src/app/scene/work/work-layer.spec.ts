@@ -17,15 +17,20 @@ const CAREER: ChapterId[] = [
 const CAREER_STEPS = CAREER.flatMap((id) => workSteps(id));
 
 /** The CV's own words for each domain; a step shows one only where its CV entry says so. */
-const DOMAIN_IN_CV: Record<Domain, string> = {
+const DOMAIN_IN_CV: Record<Exclude<Domain, 'fintech'>, string> = {
   tailoring: 'tailoring',
   edtech: 'online learning',
   restaurants: 'restaurant management and delivery',
   healthcare: 'HIPAA',
-  'finance-learning': 'online finance learning',
   iot: 'IoT',
   'data-protection': 'cloud data-protection',
   aviation: 'aviation',
+};
+
+/** Domains the owner confirmed where the CV names none. */
+const DOMAIN_FROM_OWNER: Record<string, Domain> = {
+  'Corporate Finance Institute': 'edtech',
+  Deloitte: 'fintech',
 };
 
 /** Everything the CV says about a company: its title and highlights. */
@@ -65,15 +70,15 @@ describe('work layer content', () => {
     }
   });
 
-  it('shows a domain only where the CV states it', () => {
+  it('shows a domain only where the CV or the owner states it', () => {
     for (const role of CAREER_STEPS) {
-      if (role.domain)
+      const owner = DOMAIN_FROM_OWNER[role.company];
+      if (owner) expect(role.domain, role.company).toBe(owner);
+      else if (role.domain)
         expect(cvText(role.company), role.company).toContain(
-          DOMAIN_IN_CV[role.domain].toLowerCase(),
+          DOMAIN_IN_CV[role.domain as keyof typeof DOMAIN_IN_CV].toLowerCase(),
         );
     }
-    // Deloitte's CV entry names a team, not a domain.
-    expect(CAREER_STEPS.find((r) => r.company === 'Deloitte')!.domain).toBeUndefined();
   });
 });
 

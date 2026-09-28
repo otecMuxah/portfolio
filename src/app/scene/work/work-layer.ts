@@ -95,10 +95,11 @@ const PLACEMENTS: Partial<Record<ChapterId, Partial<Placement>>> = {
   'kharkiv-career': { ring: [-5, 10, 4.5] },
   // Clear of the north spire.
   krakow: { sign: [-4.5, -4, 14] },
-  // The camera rides behind the car out of the war until the chapter's midpoint, and moves on soon after.
-  ciklum: { schedule: [0.58, 0.12] },
-  // Clear of the Commerzbank tower and the planes.
-  iata: { ring: [-6.5, 9, 3] },
+  // The camera rides behind the car out of the war until the chapter's midpoint, and moves on soon after. The sign
+  // stands behind the forest and the ring over the gap between house and castle, clear of both.
+  ciklum: { sign: [-1.6, -8.8, 12], ring: [-3.5, 12, 0.2], schedule: [0.58, 0.12] },
+  // The sign right of the towers, under the planes; the ring left of the Messeturm.
+  iata: { sign: [4.6, -6.6, 10], ring: [-6.5, 11, 2.5] },
 };
 
 const WARM: PaletteKey[] = [

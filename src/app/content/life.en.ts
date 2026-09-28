@@ -102,7 +102,7 @@ export const EN: Record<ChapterId, ChapterText> = {
           'Founded and architected the front end of a finance learning platform for 100,000+ users: sub-1s load, sub-200KB bundle.',
           'Led a team of 5 as head of the front-end function.',
         ],
-        domain: 'finance-learning',
+        domain: 'edtech',
         tech: ['Angular', 'Ionic', 'Capacitor'],
       },
       {
@@ -128,7 +128,7 @@ export const EN: Record<ChapterId, ChapterText> = {
         highlights: [
           "Created CFI's cross-platform mobile app from its first commit and shipped it to both stores single-handed.",
         ],
-        domain: 'finance-learning',
+        domain: 'edtech',
         tech: ['Angular', 'Ionic', 'Capacitor'],
       },
     ],
@@ -164,6 +164,7 @@ export const EN: Record<ChapterId, ChapterText> = {
         highlights: [
           'Migrated the front end to an Nx monorepo with module federation, improving application performance by 40%.',
         ],
+        domain: 'fintech',
         tech: ['Angular', '.NET', 'Nx', 'Module Federation', 'Azure DevOps'],
       },
     ],
@@ -205,8 +206,8 @@ export const EN_DOMAINS: Record<Domain, string> = {
   edtech: 'EdTech: online learning',
   restaurants: 'Restaurant management and delivery',
   healthcare: 'HIPAA-compliant healthcare',
-  'finance-learning': 'Online finance learning',
   iot: 'IoT sensor monitoring',
   'data-protection': 'Cloud data protection',
   aviation: 'Aviation',
+  fintech: 'Fintech',
 };

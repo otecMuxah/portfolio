@@ -91,18 +91,16 @@ function heart(): Part[] {
   return [[slab(points, 0.34).translate(0, 0.05, 0), 'brick']];
 }
 
-/** Rising bars and an arrow: finance learning. */
-function chart(): Part[] {
+/** A stack of coins and a bank card leaning on it: fintech. */
+function coins(): Part[] {
+  const coin = (y: number, x = 0) => new THREE.CylinderGeometry(0.42, 0.42, 0.16, 6).translate(x, y, 0);
   return [
-    [new THREE.BoxGeometry(1.5, 0.08, 0.5).translate(0, -0.6, 0), 'brass'],
-    [new THREE.BoxGeometry(0.34, 0.5, 0.34).translate(-0.5, -0.31, 0), 'terracotta'],
-    [new THREE.BoxGeometry(0.34, 0.85, 0.34).translate(0, -0.13, 0), 'sandstone'],
-    [new THREE.BoxGeometry(0.34, 1.25, 0.34).translate(0.5, 0.07, 0), 'wheat'],
-    [new THREE.BoxGeometry(1.35, 0.08, 0.08).rotateZ(0.62).translate(-0.05, 0.3, 0.3), 'chalk'],
-    [
-      new THREE.ConeGeometry(0.14, 0.3, 4).rotateZ(-Math.PI / 2 + 0.62).translate(0.58, 0.72, 0.3),
-      'chalk',
-    ],
+    [coin(-0.62), 'brass'],
+    [coin(-0.45), 'wheat'],
+    [coin(-0.28), 'brass'],
+    [coin(-0.11, 0.05), 'wheat'],
+    [new THREE.BoxGeometry(0.95, 0.6, 0.05).rotateZ(-0.35).translate(-0.62, -0.25, 0.3), 'skyBlue'],
+    [new THREE.BoxGeometry(0.95, 0.1, 0.06).rotateZ(-0.35).translate(-0.57, -0.1, 0.31), 'steel'],
   ];
 }
 
@@ -177,10 +175,10 @@ const BUILDERS: Record<Domain, () => Part[]> = {
   edtech: mortarboard,
   restaurants: cloche,
   healthcare: heart,
-  'finance-learning': chart,
   iot: seedling,
   'data-protection': lockedCloud,
   aviation: airliner,
+  fintech: coins,
 };
 
 /** A domain's emblem, about 1.6 m across, centred on its origin and facing +z. */
