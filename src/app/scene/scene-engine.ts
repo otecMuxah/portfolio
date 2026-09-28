@@ -224,8 +224,9 @@ export class SceneEngine {
     this.camera.position.copy(this.path.getPoint(t));
     this.look.copy(this.camera.position).sub(CAMERA_OFFSET).add(LOOK_OFFSET);
     this.carAt.copy(this.camera.position).sub(CAMERA_OFFSET).add(CAR_OFFSET);
-    this.carRig.update(journeyAt(this.current).carId, this.carAt, this.path.getTangent(t, this.tangent), time);
-    this.rider.update(riderAt(this.current, this.riderState), this.current, this.carAt, this.tangent, time);
+    const rider = riderAt(this.current, this.riderState);
+    this.carRig.update(journeyAt(this.current).carId, this.carAt, this.path.getTangent(t, this.tangent), time, rider.arrival);
+    this.rider.update(rider, this.current, this.carAt, this.tangent, time);
 
     const war = this.war ? (this.current - this.war.start) / (this.war.end - this.war.start) : 0;
     // Whole until the war; after it, assembled anew out of the last light.

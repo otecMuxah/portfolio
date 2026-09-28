@@ -71,20 +71,28 @@ export class CarRig {
     this.object.add(this.ring);
   }
 
-  /** Places the rig at `position` facing along `direction`, showing `carId` (or nothing). */
-  update(carId: CarId | null, position: THREE.Vector3, direction: THREE.Vector3, time: number): void {
+  /**
+   * Places the rig at `position` facing along `direction`, showing `carId` (or nothing). `arrival` below 1 poses the
+   * swap by scroll instead of the clock (the first car pulling up beside him, #46): nothing spins out, and the drop-in
+   * is that far along.
+   */
+  update(carId: CarId | null, position: THREE.Vector3, direction: THREE.Vector3, time: number, arrival = 1): void {
     if (carId !== this.shown) {
       this.outgoing = this.shown;
       this.shown = carId;
       this.swapStart = time;
       this.ring.material.color.set(this.cars.get((carId ?? this.outgoing)!)?.userData['colour'] ?? '#e8c89a');
     }
+    if (arrival < 1) {
+      this.outgoing = null;
+      this.swapStart = -Infinity;
+    }
     const travelled = position.distanceTo(this.lastPosition);
     this.lastPosition.copy(position);
     this.object.position.copy(position);
     this.object.rotation.y = Math.atan2(-direction.z, direction.x);
 
-    const s = THREE.MathUtils.clamp((time - this.swapStart) / SWAP_SECONDS, 0, 1);
+    const s = arrival < 1 ? arrival : THREE.MathUtils.clamp((time - this.swapStart) / SWAP_SECONDS, 0, 1);
     this.cars.forEach((car, id) => {
       car.visible = false;
       if (id === this.outgoing && s < 0.5) {
