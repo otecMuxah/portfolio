@@ -74,6 +74,7 @@ test('the Kharkiv career card lists the skills that orbit the skyline', async ({
 test('two full scroll passes through the career chapters allocate no new GPU geometry or textures', async ({
   page,
 }) => {
+  test.setTimeout(120_000);
   const errors = collectErrors(page);
   await visit(page, '/');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');

@@ -70,7 +70,7 @@ const MODELS: Record<CarId, CarModel> = {
     extras: (car) => {
       // Low metalness: there is no env map, so a metallic grille would reflect nothing and read black.
       const grille = new THREE.MeshStandardMaterial({ color: '#c9ced6', metalness: 0.2, roughness: 0.4 });
-      for (const z of [-0.17, 0.17]) car.add(box([0.08, 0.18, 0.26], [2.33, 0.78, z], grille));
+      for (const z of [-0.17, 0.17]) car.add(named('grille', box([0.08, 0.18, 0.26], [2.33, 0.78, z], grille)));
     },
   },
 };
@@ -80,7 +80,7 @@ const TYRE = new THREE.MeshStandardMaterial({ color: '#141414', flatShading: tru
 const HEADLIGHT = new THREE.MeshStandardMaterial({ color: '#fff4d6', emissive: '#fff4d6', emissiveIntensity: 1.5 });
 const TAILLIGHT = new THREE.MeshStandardMaterial({ color: '#ff2a1a', emissive: '#ff2a1a', emissiveIntensity: 1.5 });
 
-/** Builds a car as a group; its wheels are named `wheel` so the rig can spin them. */
+/** Builds a car as a group; its parts are named (wheels as `wheel`) so the rig can spin and the rebuild assemble them. */
 export function buildCar(carId: CarId): THREE.Group {
   const model = MODELS[carId];
   const body = new THREE.MeshStandardMaterial({
@@ -92,21 +92,21 @@ export function buildCar(carId: CarId): THREE.Group {
   const car = new THREE.Group();
   car.name = carId;
   car.userData['colour'] = model.colour;
-  car.add(extrude(model.lower, model.width, body));
-  car.add(extrude(model.cabin, model.width - 0.2, GLASS));
+  car.add(named('body', extrude(model.lower, model.width, body)));
+  car.add(named('cabin', extrude(model.cabin, model.width - 0.2, GLASS)));
 
   const roofY = Math.max(...model.cabin.map(([, y]) => y));
   const roofXs = model.cabin.filter(([, y]) => y > roofY - 0.05).map(([x]) => x);
   const roofMin = Math.min(...roofXs);
   const roofMax = Math.max(...roofXs);
-  car.add(box([roofMax - roofMin + 0.1, 0.06, model.width - 0.14], [(roofMin + roofMax) / 2, roofY + 0.03, 0], body));
+  car.add(named('roof', box([roofMax - roofMin + 0.1, 0.06, model.width - 0.14], [(roofMin + roofMax) / 2, roofY + 0.03, 0], body)));
 
   const front = Math.max(...model.lower.map(([x]) => x));
   const rear = Math.min(...model.lower.map(([x]) => x));
   const lightY = model.lower[2][1] + 0.05;
   for (const z of [-1, 1].map((s) => s * (model.width / 2 - 0.25))) {
-    car.add(box([0.06, 0.12, 0.3], [front - 0.02, lightY, z], HEADLIGHT));
-    car.add(box([0.06, 0.12, 0.3], [rear + 0.02, lightY, z], TAILLIGHT));
+    car.add(named('headlight', box([0.06, 0.12, 0.3], [front - 0.02, lightY, z], HEADLIGHT)));
+    car.add(named('taillight', box([0.06, 0.12, 0.3], [rear + 0.02, lightY, z], TAILLIGHT)));
   }
 
   const r = model.wheelRadius;
@@ -125,6 +125,11 @@ export function buildCar(carId: CarId): THREE.Group {
 
 export function wheelRadius(carId: CarId): number {
   return MODELS[carId].wheelRadius;
+}
+
+function named<T extends THREE.Object3D>(name: string, object: T): T {
+  object.name = name;
+  return object;
 }
 
 function extrude(profile: Profile, depth: number, material: THREE.Material): THREE.Mesh {

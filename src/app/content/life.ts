@@ -17,6 +17,8 @@ export type SceneKind =
   | 'krakow'
   | 'back-home'
   | 'war'
+  | 'ciklum'
+  | 'iata'
   | 'garage';
 
 export type ChapterId =
@@ -43,7 +45,10 @@ export interface Chapter {
   yearEnd?: number | 'now';
   phase: Phase;
   scene: SceneKind;
-  /** Relative scroll length; the war chapter gets more so it can't be skimmed. */
+  /**
+   * Relative scroll length; the war chapter gets more so it can't be skimmed, and Ciklum a little more so the road
+   * out of the war's park is calm.
+   */
   scrollWeight?: number;
 }
 
@@ -96,8 +101,8 @@ export const CHAPTERS: Chapter[] = [
   { id: 'krakow', year: 2021, phase: 'build', scene: 'krakow' },
   { id: 'back-home', year: 2022, phase: 'build', scene: 'back-home' },
   { id: 'war', year: 2022, phase: 'shatter', scene: 'war', scrollWeight: 3 },
-  { id: 'ciklum', year: 2022, yearEnd: 2024, phase: 'rebuild', scene: 'placeholder' },
-  { id: 'iata', year: 2024, yearEnd: 'now', phase: 'rebuild', scene: 'placeholder' },
+  { id: 'ciklum', year: 2022, yearEnd: 2024, phase: 'rebuild', scene: 'ciklum', scrollWeight: 2 },
+  { id: 'iata', year: 2024, yearEnd: 'now', phase: 'rebuild', scene: 'iata' },
   { id: 'garage', phase: 'garage', scene: 'garage' },
 ];
 

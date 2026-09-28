@@ -44,7 +44,8 @@ test('the timeline flies to the garage', async ({ page }) => {
     .click();
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'garage');
   await expect(page).toHaveURL(/#garage$/);
-  await expect(spinner(page, 'BMW 320d F30')).toBeVisible();
+  // The last car drops in once the eased camera arrives, which under load takes a while after the scroll does.
+  await expect(spinner(page, 'BMW 320d F30')).toBeVisible({ timeout: 20_000 });
   expect(errors).toEqual([]);
 });
 

@@ -34,6 +34,8 @@ export const PALETTE = {
   steel: '#4d7ea8',
   glass: '#a8dadc',
   skyBlue: '#7fb7e6',
+  /** The sky the rebuild opens onto, in place of night: deep, cool, not yet day. */
+  dawnSky: '#1b2c40',
 
   concrete: '#6b6b6b',
   studio: '#e6e6e6',

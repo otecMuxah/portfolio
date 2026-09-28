@@ -165,7 +165,7 @@ export interface ShatterStats {
  * are copied in world space, split into chunks and baked into one geometry per material, with each chunk's centre,
  * delay, flight and tumble as vertex attributes. From then on the pose of every shard is computed on the GPU from a
  * single uniform, the war's local progress, so a frame costs one uniform write and scrolling back un-breaks exactly.
- * Lights (halos, light pools) don't break; they go out first.
+ * Lights (halos, light pools, embers) don't break; they go out first.
  */
 export class Shatter {
   readonly object = new THREE.Group();
@@ -234,8 +234,14 @@ export class Shatter {
             }
           } else this.addMesh(obj.geometry, obj.matrixWorld, colorAttr, b, random, shard);
         } else if (obj instanceof THREE.Points) {
-          const b = batch(points, obj.material as THREE.Material);
           const pos = obj.geometry.getAttribute('position');
+          // Points that move on their own (embers) would jump to a frozen copy as the war starts: they stay live, on
+          // their own geometry, and go out with the lights.
+          if ((pos as THREE.BufferAttribute).usage === THREE.DynamicDrawUsage) {
+            this.addLight(new THREE.Points(obj.geometry, (obj.material as THREE.Material).clone()), obj);
+            continue;
+          }
+          const b = batch(points, obj.material as THREE.Material);
           const colorAttr = (obj.material as THREE.PointsMaterial).vertexColors ? obj.geometry.getAttribute('color') : undefined;
           b.colorSize = colorAttr?.itemSize ?? 0;
           const p = new THREE.Vector3();
@@ -291,7 +297,7 @@ export class Shatter {
     this.stats.drawCalls++;
   }
 
-  private addLight(copy: THREE.Sprite | THREE.Mesh, of: THREE.Object3D): void {
+  private addLight(copy: THREE.Sprite | THREE.Mesh | THREE.Points, of: THREE.Object3D): void {
     const material = copy.material as THREE.Material;
     graded(material);
     copy.matrixAutoUpdate = false;
