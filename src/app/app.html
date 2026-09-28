@@ -34,5 +34,23 @@
     }
     <h2 class="card__title">{{ text().title }}</h2>
     <p class="card__body">{{ text().body }}</p>
+    @for (job of text().roles ?? []; track job.company) {
+      <section class="card__role">
+        <h3 class="card__company">{{ job.company }}</h3>
+        <p class="card__position">{{ job.role }} · {{ job.years }}</p>
+        <ul class="card__highlights">
+          @for (line of job.highlights; track line) {
+            <li>{{ line }}</li>
+          }
+        </ul>
+      </section>
+    }
+    @if (text().skills; as skills) {
+      <ul class="card__skills" aria-label="Skills">
+        @for (skill of skills; track skill) {
+          <li>{{ skill }}</li>
+        }
+      </ul>
+    }
   </article>
 </main>
