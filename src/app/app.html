@@ -69,21 +69,41 @@
     }
   </ol>
   @if (webgl()) {
-    <article class="card" aria-hidden="true">
-      @if (text().placeholder) {
-        <p class="card__flag">Placeholder text: Mykhailo’s own words to come</p>
-      }
-      @if (meta()) {
-        <p class="card__meta">{{ meta() }}</p>
-      }
-      <h2 class="card__title">{{ text().title }}</h2>
-      <p class="card__body">{{ text().body }}</p>
-      <ng-container
-        *ngTemplateOutlet="
-          career;
-          context: { roles: text().roles, skills: text().skills, block: 'card' }
-        "
-      />
+    <!-- The story list speaks for the card; only the phone toggle is left for assistive tech. -->
+    <article class="card" [class.card--open]="cardOpen()">
+      <div class="card__head">
+        <div aria-hidden="true">
+          @if (text().placeholder) {
+            <p class="card__flag">Placeholder text: Mykhailo’s own words to come</p>
+          }
+          @if (meta()) {
+            <p class="card__meta">{{ meta() }}</p>
+          }
+          <h2 class="card__title">{{ text().title }}</h2>
+        </div>
+        <button
+          appCardToggle
+          class="card__toggle"
+          aria-label="Chapter details"
+          aria-controls="card-details"
+          [(expanded)]="cardOpen"
+        >
+          <svg class="card__chevron" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 15l6-6 6 6" />
+          </svg>
+        </button>
+      </div>
+      <div id="card-details" class="card__details" aria-hidden="true">
+        <div class="card__more">
+          <p class="card__body">{{ text().body }}</p>
+          <ng-container
+            *ngTemplateOutlet="
+              career;
+              context: { roles: text().roles, skills: text().skills, block: 'card' }
+            "
+          />
+        </div>
+      </div>
     </article>
   }
 </main>
