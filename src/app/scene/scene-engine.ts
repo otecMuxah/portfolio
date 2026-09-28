@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ChapterSpan, journeyAt } from '../journey/journey';
+import { ChapterSpan, journeyAt, riderAt } from '../journey/journey';
 import { PALETTE } from './art/palette';
 import { CarRig } from './car-rig';
 import { buildCar } from './cars';
@@ -8,6 +8,7 @@ import { CHAPTER_BUILDERS } from './chapters';
 import { LIGHT } from './chapters/war';
 import { GRADE_UNIFORMS, dawnAt, gradeAll, gradeAt, gradeColor } from './grade';
 import { f30Assembled } from './rebuild';
+import { RiderRig } from './rider-rig';
 import { Shatter, shakeAt } from './shatter';
 
 /** The camera travels a road beside the scenes, framing each subject from the front-right (a 3/4 view). */
@@ -51,6 +52,9 @@ export class SceneEngine {
   private readonly chapterScenes: ChapterScene[] = [];
   private readonly clock = new THREE.Timer();
   private readonly carRig = new CarRig();
+  /** Before the first car he travels the road himself, where the car rides later. */
+  private readonly rider = new RiderRig();
+  private readonly riderState = riderAt(0);
   private readonly carAt = new THREE.Vector3();
   private readonly tangent = new THREE.Vector3();
   private readonly look = new THREE.Vector3();
@@ -89,6 +93,8 @@ export class SceneEngine {
     // Added before load() compiles so the car materials are ready with the first chapter.
     gradeAll(this.carRig.object);
     this.scene.add(this.carRig.object);
+    gradeAll(this.rider.object);
+    this.scene.add(this.rider.object);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -193,6 +199,7 @@ export class SceneEngine {
     this.scene.traverse((obj) => {
       if (obj instanceof THREE.Mesh || obj instanceof THREE.Points || obj instanceof THREE.Line) {
         obj.geometry.dispose();
+        if (obj instanceof THREE.SkinnedMesh) obj.skeleton.dispose();
         [obj.material].flat().forEach((m: THREE.Material) => {
           if ('map' in m && m.map instanceof THREE.Texture) m.map.dispose();
           m.dispose();
@@ -218,6 +225,7 @@ export class SceneEngine {
     this.look.copy(this.camera.position).sub(CAMERA_OFFSET).add(LOOK_OFFSET);
     this.carAt.copy(this.camera.position).sub(CAMERA_OFFSET).add(CAR_OFFSET);
     this.carRig.update(journeyAt(this.current).carId, this.carAt, this.path.getTangent(t, this.tangent), time);
+    this.rider.update(riderAt(this.current, this.riderState), this.current, this.carAt, this.tangent, time);
 
     const war = this.war ? (this.current - this.war.start) / (this.war.end - this.war.start) : 0;
     // Whole until the war; after it, assembled anew out of the last light.
