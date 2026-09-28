@@ -1,12 +1,18 @@
 import * as THREE from 'three';
-import { ChapterSpan, spanAt } from '../journey/journey';
+import { ChapterSpan, journeyAt, spanAt } from '../journey/journey';
 import { PALETTE } from './art/palette';
+import { CarRig } from './car-rig';
 import { ChapterScene } from './chapter-scene';
 import { CHAPTER_BUILDERS } from './chapters';
 
 const CHAPTER_GAP = 40;
 const CAMERA_OFFSET = new THREE.Vector3(0, 6, 18);
 const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
+/**
+ * Where the car rides relative to the point the camera frames (camera minus CAMERA_OFFSET): at a chapter's
+ * midpoint that is the anchor, putting the car in the lane art-direction.md keeps clear (|x| < 3, z 4–14).
+ */
+const CAR_OFFSET = new THREE.Vector3(2, 0, 6.5);
 
 /** Owns the Three.js renderer, camera and loop. Runs outside Angular change detection. */
 export class SceneEngine {
@@ -19,6 +25,9 @@ export class SceneEngine {
   /** Sparse until every chapter has been built. */
   private readonly chapterScenes: ChapterScene[] = [];
   private readonly clock = new THREE.Timer();
+  private readonly carRig = new CarRig();
+  private readonly carAt = new THREE.Vector3();
+  private readonly tangent = new THREE.Vector3();
   private target = 0;
   private disposed = false;
   private current = 0;
@@ -39,6 +48,8 @@ export class SceneEngine {
 
     this.anchors = spans.map((_, i) => new THREE.Vector3(Math.sin(i) * 12, 0, -i * CHAPTER_GAP));
     this.path = new THREE.CatmullRomCurve3(this.anchors.map((a) => a.clone().add(CAMERA_OFFSET)));
+    // Added before load() compiles so the car materials are ready with the first chapter.
+    this.scene.add(this.carRig.object);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -109,6 +120,8 @@ export class SceneEngine {
     const t = this.pathT(this.current);
     this.camera.position.copy(this.path.getPoint(t));
     this.camera.lookAt(this.camera.position.clone().sub(CAMERA_OFFSET).add(LOOK_OFFSET));
+    this.carAt.copy(this.camera.position).sub(CAMERA_OFFSET).add(CAR_OFFSET);
+    this.carRig.update(journeyAt(this.current).carId, this.carAt, this.path.getTangent(t, this.tangent), time);
     this.renderer.render(this.scene, this.camera);
   }
 

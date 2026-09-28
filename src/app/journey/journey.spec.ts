@@ -1,5 +1,5 @@
 import { CHAPTERS, CHAPTER_TEXT } from '../content/life';
-import { chapterSpans, journeyAt } from './journey';
+import { carFor, chapterSpans, journeyAt, yearAt } from './journey';
 
 const ORDER = [
   'birth',
@@ -65,6 +65,62 @@ describe('journeyAt', () => {
       ciklum: 'f30',
       iata: 'f30',
     });
+  });
+});
+
+describe('the car carrying the camera', () => {
+  const spans = chapterSpans();
+  const span = (id: string) => spans.find((s) => s.chapter.id === id)!;
+  /** Progress a fraction of the way through a chapter's span. */
+  const at = (id: string, local: number) => span(id).start + (span(id).end - span(id).start) * local;
+
+  it.each([
+    [2002, null],
+    [2003, 'golf2'],
+    [2004, 'mazda323f'],
+    [2006, 'mazda3'],
+    [2008, 'forester'],
+    [2012, 'forester'],
+    [2013, 'f30'],
+    [2024, 'f30'],
+  ])('in %i is %s', (year, carId) => {
+    expect(carFor(year)?.id ?? null).toBe(carId);
+  });
+
+  it('reads the scrolled year from the chapter start to the next dated chapter', () => {
+    expect(yearAt(spans, at('dreamweaver', 0))).toBe(2000);
+    expect(yearAt(spans, at('dreamweaver', 0.5))).toBeCloseTo(2003);
+    expect(yearAt(spans, at('family', 0))).toBeCloseTo(2006);
+    expect(yearAt(spans, at('family', 0.5))).toBeCloseTo(2009);
+    expect(yearAt(spans, at('back-home', 0.5))).toBe(2022);
+  });
+
+  it('holds the last dated chapter at its own year when only undated chapters follow', () => {
+    expect(yearAt(spans, at('iata', 0.99))).toBe(2024);
+  });
+
+  it('has no year and no car in the undated garage', () => {
+    expect(yearAt(spans, at('garage', 0.5))).toBeUndefined();
+    expect(journeyAt(at('garage', 0.5)).carId).toBeNull();
+  });
+
+  it('swaps cars mid-chapter as the scrolled year passes each start year', () => {
+    expect(journeyAt(at('dreamweaver', 0.49)).carId).toBeNull();
+    expect(journeyAt(at('dreamweaver', 0.51)).carId).toBe('golf2');
+    expect(journeyAt(at('dreamweaver', 0.68)).carId).toBe('mazda323f');
+    expect(journeyAt(at('family', 0.01)).carId).toBe('mazda3');
+    expect(journeyAt(at('family', 0.32)).carId).toBe('mazda3');
+    expect(journeyAt(at('family', 0.34)).carId).toBe('forester');
+    expect(journeyAt(at('first-code', 0.32)).carId).toBe('forester');
+    expect(journeyAt(at('first-code', 0.34)).carId).toBe('f30');
+  });
+
+  it('meets every car once, in ownership order, and reverses exactly when scrolling back', () => {
+    const distinct = (ids: (string | null)[]) => ids.filter((id, i) => i === 0 || id !== ids[i - 1]);
+    const forward = distinct(Array.from({ length: 10001 }, (_, i) => journeyAt(i / 10000).carId));
+    const backward = distinct(Array.from({ length: 10001 }, (_, i) => journeyAt(1 - i / 10000).carId));
+    expect(forward).toEqual([null, 'golf2', 'mazda323f', 'mazda3', 'forester', 'f30', null]);
+    expect(backward).toEqual([...forward].reverse());
   });
 });
 
