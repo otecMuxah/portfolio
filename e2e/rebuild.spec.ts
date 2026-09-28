@@ -3,7 +3,7 @@ import { Page, expect, test } from '@playwright/test';
 import { chapterSpans } from '../src/app/journey/journey';
 import { collectErrors, root, scrollJourney, visit } from './support';
 
-const EVIDENCE = 'docs/analysis/10-evidence';
+const EVIDENCE = 'docs/analysis/48-evidence/e2e';
 
 interface SceneInfo {
   geometries: number;
@@ -107,7 +107,7 @@ test('data-phase is rebuild and the car is the F30 through Ciklum and IATA, forw
   expect(errors).toEqual([]);
 });
 
-test('the rebuild goes up by scroll and scrolling back returns the war exactly as it was left', async ({ page }) => {
+test('Aschaffenburg goes up by scroll, and scrolling back returns it and the war exactly as they were', async ({ page }) => {
   test.setTimeout(120_000);
   const errors = collectErrors(page);
   await visit(page, '/');
@@ -116,11 +116,9 @@ test('the rebuild goes up by scroll and scrolling back returns the war exactly a
   const warEnd = await shoot(page, at('war', 0.999), '01-war-end');
   const budget: Record<string, SceneInfo['frame']> = {};
   const stops: [string, number][] = [
-    ['ciklum', 0.1],
     ['ciklum', 0.3],
     ['ciklum', 0.5],
-    ['ciklum', 0.6],
-    ['ciklum', 0.75],
+    ['ciklum', 0.7],
     ['ciklum', 0.9],
     ['iata', 0.2],
     ['iata', 0.5],
@@ -132,14 +130,18 @@ test('the rebuild goes up by scroll and scrolling back returns the war exactly a
     await expect(page.locator(root)).toHaveAttribute('data-chapter', id);
     budget[`${id} ${local}`] = (await sceneInfo(page)).frame;
   }
-  // Something new stands where the war left only a light, and IATA is a different place again.
+  // The house and the castle stand where the war left only a light, and IATA is a different place again.
   const shot = (id: string, local: number) => shots[stops.findIndex(([i, l]) => i === id && l === local)];
   expect(await pixelDiff(page, warEnd, shot('ciklum', 0.5))).toBeGreaterThan(0.05);
   expect(await pixelDiff(page, shot('ciklum', 0.5), shot('iata', 0.5))).toBeGreaterThan(0.05);
 
-  // Back down through the rebuild, a step at a time, to the war's end.
-  for (const [id, local] of [...stops].reverse()) await snapTo(page, at(id, local));
-  const reversed = await shoot(page, at('war', 0.999), `${stops.length + 2}-war-end-reversed`);
+  // Back down through the rebuild, a step at a time: Aschaffenburg at the chapter's middle as it was going forward
+  // (the windows lit so far and no more, the castle standing), then on to the war's end.
+  for (const [id, local] of [...stops].reverse().filter(([id, local]) => id !== 'ciklum' || local > 0.5)) await snapTo(page, at(id, local));
+  const middle = await shoot(page, at('ciklum', 0.5), `${stops.length + 2}-ciklum-50-reversed`);
+  expect(await pixelDiff(page, shot('ciklum', 0.5), middle)).toBeLessThan(0.02);
+  await snapTo(page, at('ciklum', 0.3));
+  const reversed = await shoot(page, at('war', 0.999), `${stops.length + 3}-war-end-reversed`);
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'shatter');
   expect(await pixelDiff(page, warEnd, reversed)).toBeLessThan(0.02);
 
