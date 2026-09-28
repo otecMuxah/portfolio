@@ -58,9 +58,8 @@ export const EN: Record<ChapterId, ChapterText> = {
   war: {
     label: 'War',
     place: 'Kharkiv',
-    title: 'February 2022. War.',
-    body: 'The war came. Everything he had built was lost.',
-    placeholder: true,
+    title: '24.02.2022',
+    body: '4 a.m. Explosions. 5 a.m. Family in the car. West. Then Europe. The life he built in Kharkiv, left behind.',
   },
   ciklum: {
     label: 'Ciklum',
