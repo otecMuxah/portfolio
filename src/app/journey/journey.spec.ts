@@ -90,9 +90,9 @@ describe('life content', () => {
     expect(years).toEqual([...years].sort((a, b) => a - b));
   });
 
-  it('flags only the war chapter as placeholder text, awaiting Mykhailo’s own words', () => {
+  it('flags no chapter as placeholder text', () => {
     const flagged = CHAPTERS.filter((c) => CHAPTER_TEXT.en[c.id].placeholder).map((c) => c.id);
-    expect(flagged).toEqual(['war']);
+    expect(flagged).toEqual([]);
   });
 
   it('carries no phone number', () => {

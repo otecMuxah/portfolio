@@ -35,10 +35,12 @@ test('scrolling walks the visitor through each chapter in order', async ({ page 
   expect(errors).toEqual([]);
 });
 
-test('the war chapter shows clearly flagged placeholder text', async ({ page }) => {
+test('the war chapter tells the night of 24 February 2022, with no placeholder flag', async ({ page }) => {
   await page.goto('/#war');
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'shatter');
-  await expect(page.locator('.card')).toContainText('Placeholder');
+  await expect(page.getByRole('heading', { name: '24.02.2022' })).toBeVisible();
+  await expect(page.locator('.card')).toContainText('4 a.m. Explosions.');
+  await expect(page.locator('.card')).not.toContainText('Placeholder');
 });
 
 test('the timeline highlights the current chapter and clicking an item flies there', async ({ page }) => {
