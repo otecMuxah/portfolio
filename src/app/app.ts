@@ -20,6 +20,9 @@ const PREV_KEYS = ['ArrowUp', 'ArrowLeft', 'PageUp'];
 const KEEPS_KEYS = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), dialog';
 /** How long a jump target counts for repeated key presses, where `scrollend` never fires. */
 const PENDING_MS = 1500;
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+/** Reduced motion: the card's cross-fade between chapters, as the scene dips between them (scene-engine.ts). */
+const CROSS_FADE: KeyframeAnimationOptions = { duration: 400, easing: 'ease' };
 
 const sameState = (a: JourneyState, b: JourneyState) =>
   a.chapterId === b.chapterId && a.carId === b.carId && a.riderId === b.riderId && a.phase === b.phase;
@@ -48,6 +51,9 @@ export class App {
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private readonly track = viewChild.required<ElementRef<HTMLElement>>('track');
   private readonly nav = viewChild.required<ElementRef<HTMLElement>>('nav');
+  private readonly card = viewChild<ElementRef<HTMLElement>>('card');
+  /** The card as it read in the chapter left, fading out over the new one. */
+  private leaving?: HTMLElement;
 
   /**
    * Without WebGL the story list is the page; with it, the list is there for screen readers only.
@@ -106,7 +112,9 @@ export class App {
         onUpdate: ({ progress }) => {
           engine.setProgress(progress);
           const previous = this.state().chapterId;
-          this.state.set(journeyAt(progress));
+          const next = journeyAt(progress);
+          if (next.chapterId !== previous && matchMedia(REDUCED_MOTION).matches) this.crossFadeCard();
+          this.state.set(next);
           const { chapterId } = this.state();
           if (chapterId !== previous) {
             history.replaceState(null, '', `#${chapterId}`);
@@ -159,8 +167,21 @@ export class App {
     const max = document.documentElement.scrollHeight - innerHeight;
     this.pending = index;
     this.pendingUntil = performance.now() + PENDING_MS;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) behavior = 'instant';
+    if (matchMedia(REDUCED_MOTION).matches) behavior = 'instant';
     scrollTo({ top: (max * (start + end)) / 2, behavior });
+  }
+
+  /** Called before the card turns to a new chapter: a copy of it as it reads now fades out as the card fades in. */
+  private crossFadeCard(): void {
+    const card = this.card()?.nativeElement;
+    if (!card) return;
+    this.leaving?.remove();
+    const leaving = (this.leaving = card.cloneNode(true) as HTMLElement);
+    leaving.inert = true;
+    leaving.style.pointerEvents = 'none';
+    card.after(leaving);
+    leaving.animate({ opacity: [1, 0] }, CROSS_FADE).onfinish = () => leaving.remove();
+    card.animate({ opacity: [0, 1] }, CROSS_FADE);
   }
 
   /** Keep the current item visible where the timeline scrolls sideways (phones), without scrolling the page. */

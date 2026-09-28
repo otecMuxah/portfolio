@@ -8,10 +8,10 @@ import { CHAPTER_BUILDERS } from './chapters';
 import { LIGHT } from './chapters/war';
 import { BENDS, DRIVE, EscapeRoute, chaseAt, chaseCamera, driveAt, fallIn } from './escape';
 import { GRADE_UNIFORMS, dawnAt, gradeAll, gradeAt, gradeColor } from './grade';
-import { CAMERA_OFFSET, CAR_OFFSET, cameraPath, carFrom, pathT, roadStops } from './path';
+import { CAMERA_OFFSET, CAR_OFFSET, cameraPath, carFrom, pathT, roadStops, stillAt } from './path';
 import { RiderRig } from './rider-rig';
 import { Road } from './road';
-import { Shatter, shakeAt } from './shatter';
+import { PHONE_MAX_EDGE, Shatter, shakeAt } from './shatter';
 import { withWorkLayer } from './work/work-layer';
 
 const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
@@ -24,6 +24,8 @@ const LANDSCAPE_PHONE_BACK = 1.3;
 const LANDSCAPE_PHONE_DROP = 3;
 const NIGHT = new THREE.Color(PALETTE.night);
 const DAWN_SKY = new THREE.Color(PALETTE.dawnSky);
+/** Reduced motion: how much light the still scene loses or regains per frame as it dips between chapters. */
+const DIP = 0.12;
 
 /** Owns the Three.js renderer, camera and loop. Runs outside Angular change detection. */
 export class SceneEngine {
@@ -61,6 +63,12 @@ export class SceneEngine {
   private current = 0;
   /** Set from app.scss, which owns the phone breakpoints. */
   private landscapePhone = false;
+  /** Set once from app.scss, before anything builds: phones get fewer particles and a coarser shatter (#16). */
+  private readonly phone: boolean;
+  /** Read every frame: with it each chapter holds still (stillAt) and the scene dips through the dark between them. */
+  private readonly reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  /** Reduced motion: how lit the still scene is, 0..1, as it dips. */
+  private lit = 1;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -68,6 +76,7 @@ export class SceneEngine {
   ) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.phone = getComputedStyle(canvas).getPropertyValue('--phone').trim() === '1';
     this.scene.background = new THREE.Color(PALETTE.night);
     this.scene.fog = new THREE.Fog(PALETTE.night, 20, 90);
     this.scene.add(new THREE.HemisphereLight(PALETTE.sky, PALETTE.ground, 1.2));
@@ -119,10 +128,13 @@ export class SceneEngine {
       Object.assign(window, {
         __sceneInfo: () => ({
           ...this.renderer.info.memory,
-          settled: Math.abs(this.target - this.current) < 1e-4,
+          settled: this.reducedMotion.matches
+            ? this.lit === 1 && this.current === stillAt(this.spans, this.target)
+            : Math.abs(this.target - this.current) < 1e-4,
           built: this.chapterScenes.filter(Boolean).length === this.spans.length && (!this.war || !!this.shatter),
           shatter: this.shatter?.stats,
           frame: { ...this.renderer.info.render },
+          camera: [...this.camera.position.toArray(), ...this.camera.quaternion.toArray()],
         }),
         __sceneJump: (progress: number) => (this.target = this.current = progress),
       });
@@ -170,7 +182,7 @@ export class SceneEngine {
       car.rotation.y = Math.atan2(-this.tangent.z, this.tangent.x);
       sources.push(car);
     }
-    const shatter = new Shatter(sources);
+    const shatter = new Shatter(sources, undefined, this.phone ? PHONE_MAX_EDGE : undefined);
     car?.traverse((obj) => (obj as THREE.Mesh).geometry?.dispose());
     return shatter;
   }
@@ -196,7 +208,7 @@ export class SceneEngine {
 
   private build(index: number): THREE.Object3D {
     const { chapter } = this.spans[index];
-    const built = withWorkLayer(CHAPTER_BUILDERS[chapter.scene](chapter, index), chapter);
+    const built = withWorkLayer(CHAPTER_BUILDERS[chapter.scene](chapter, index, this.phone), chapter);
     gradeAll(built.object);
     built.object.position.add(this.anchors[index]);
     this.scene.add(built.object);
@@ -230,7 +242,7 @@ export class SceneEngine {
   }
 
   private frame(): void {
-    this.current += (this.target - this.current) * 0.08;
+    this.current = this.reducedMotion.matches ? this.still() : this.current + (this.target - this.current) * 0.08;
     this.clock.update();
     const time = this.clock.getElapsed();
     this.spans.forEach(({ start, end }, i) =>
@@ -280,6 +292,7 @@ export class SceneEngine {
     this.route?.update(this.current, dawnAt(this.current));
     this.road.update(this.current);
     gradeAt(this.current, this.grade);
+    if (this.reducedMotion.matches) this.grade.exposure *= this.lit;
     GRADE_UNIFORMS.uGradeSaturation.value = this.grade.saturation;
     GRADE_UNIFORMS.uGradeExposure.value = this.grade.exposure;
     // The rebuild opens the night into a dawn sky; the fog takes its colour so distance fades into it.
@@ -287,6 +300,17 @@ export class SceneEngine {
     (this.scene.fog as THREE.Fog).color.copy(this.sky);
     gradeColor(this.sky, this.grade, this.scene.background as THREE.Color);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /**
+   * Reduced motion: the progress to show. It holds the chapter scrolled to still; when the scroll reaches another, the
+   * scene dips out, cuts to that one's still (the war's broken world included: the shatter becomes a fade) and back in.
+   */
+  private still(): number {
+    const still = stillAt(this.spans, this.target);
+    if (still === this.current) this.lit = Math.min(this.lit + DIP, 1);
+    else if ((this.lit = Math.max(this.lit - DIP, 0)) === 0) return still;
+    return this.current;
   }
 
   /** The middle of each chapter's scroll span puts the camera on that chapter's anchor; the war parks it (roadStops). */

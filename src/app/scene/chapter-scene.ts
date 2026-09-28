@@ -16,7 +16,8 @@ export interface ChapterScene {
   update?(frame: FrameState): void;
 }
 
-export type ChapterBuilder = (chapter: Chapter, index: number) => ChapterScene;
+/** `phone`: a narrow or short screen, which gets fewer particles (#16). */
+export type ChapterBuilder = (chapter: Chapter, index: number, phone?: boolean) => ChapterScene;
 
 const CHAPTER_GAP = 40;
 

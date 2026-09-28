@@ -11,6 +11,8 @@ const BUMPER = 2.4;
 const PUFFS = 110;
 const SPRAY = 700;
 const HAZE = 500;
+/** Phones carry this share of the spray and haze (#16). */
+const PHONE_SHARE = 0.5;
 
 /**
  * How far the stage road runs along the car's lane, in metres before and after where the car stands at the chapter's
@@ -26,7 +28,8 @@ export function stageAlong(index: number): [from: number, to: number] {
  * a chevron board with hay bales at the corner, and the dust the passing Forester kicks up.
  * The Forester itself is the engine's car rig; the dust follows it from scroll alone.
  */
-export const rally: ChapterBuilder = (_chapter, index) => {
+export const rally: ChapterBuilder = (_chapter, index, phone = false) => {
+  const share = phone ? PHONE_SHARE : 1;
   const random = seeded(8);
   const object = new THREE.Group();
 
@@ -195,16 +198,16 @@ export const rally: ChapterBuilder = (_chapter, index) => {
     };
   });
 
-  const spray = grains(SPRAY, 0.16);
-  const grain = Array.from({ length: SPRAY }, () => ({
+  const spray = grains(SPRAY * share, 0.16);
+  const grain = Array.from({ length: SPRAY * share }, () => ({
     along: dustFrom + (dustTo - dustFrom) * random(),
     side: random() < 0.5 ? -0.85 : 0.85,
     out: 0.5 + random() * 2.5,
     up: 1 + random() * 3,
   }));
 
-  const haze = grains(HAZE, 0.35);
-  const mote = Array.from({ length: HAZE }, () => ({
+  const haze = grains(HAZE * share, 0.35);
+  const mote = Array.from({ length: HAZE * share }, () => ({
     along: dustFrom + (dustTo - dustFrom) * random(),
     off: -ROAD_HALF_WIDTH + random() * (ROAD_HALF_WIDTH * 2 + 1),
     y: 0.2 + random() * 2.5,

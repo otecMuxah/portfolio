@@ -10,6 +10,8 @@ const GAP = 0.14;
 const NUDGE = 0.03;
 /** Triangles with a longer edge (m) split first, so walls break into pieces rather than slabs. */
 const MAX_EDGE = 1.4;
+/** Phones split coarser: fewer, bigger pieces, fewer triangles to draw while the world flies (#16). */
+export const PHONE_MAX_EDGE = 3;
 /** Chunk size (m): triangles whose centres share a cell fly as one rigid piece. */
 const CELL = 1.6;
 /** Lights (halos, light pools) go out over this first share of the war, before anything breaks. */
@@ -137,18 +139,18 @@ const lerpCorner = (a: Corner, b: Corner, k: number): Corner => ({
   c: a.c.map((v, i) => v + (b.c[i] - v) * k),
 });
 
-/** Splits a triangle along its longest edge at a seeded point until no edge is longer than MAX_EDGE. */
-function split(tri: Corner[], random: () => number, out: Corner[][], depth = 0): void {
+/** Splits a triangle along its longest edge at a seeded point until no edge is longer than `maxEdge`. */
+function split(tri: Corner[], random: () => number, out: Corner[][], maxEdge: number, depth = 0): void {
   const edges = [0, 1, 2].map((i) => tri[i].p.distanceTo(tri[(i + 1) % 3].p));
   const longest = edges.indexOf(Math.max(...edges));
-  if (edges[longest] <= MAX_EDGE || depth > 7) {
+  if (edges[longest] <= maxEdge || depth > 7) {
     out.push(tri);
     return;
   }
   const [a, b, c] = [tri[longest], tri[(longest + 1) % 3], tri[(longest + 2) % 3]];
   const m = lerpCorner(a, b, 0.35 + random() * 0.3);
-  split([a, m, c], random, out, depth + 1);
-  split([m, b, c], random, out, depth + 1);
+  split([a, m, c], random, out, maxEdge, depth + 1);
+  split([m, b, c], random, out, maxEdge, depth + 1);
 }
 
 /** Budget readout: what the shattered world costs while it flies. */
@@ -173,8 +175,15 @@ export class Shatter {
   private readonly progress = { value: 0 };
   private readonly lights: { material: THREE.Material; opacity: number }[] = [];
 
-  /** `sources` must be posed as they should break; each flies apart from its own origin. */
-  constructor(sources: THREE.Object3D[], seed = 2402) {
+  /**
+   * `sources` must be posed as they should break; each flies apart from its own origin. No triangle edge longer than
+   * `maxEdge` (m) is left unsplit.
+   */
+  constructor(
+    sources: THREE.Object3D[],
+    seed = 2402,
+    private readonly maxEdge = MAX_EDGE,
+  ) {
     this.object.name = 'shatter';
     const solids = new Map<THREE.Material, Batch>();
     const points = new Map<THREE.Material, Batch>();
@@ -332,7 +341,7 @@ export class Shatter {
     };
     const count = index ? index.count : pos.count;
     const triangles: Corner[][] = [];
-    for (let i = 0; i + 2 < count; i += 3) split([corner(i), corner(i + 1), corner(i + 2)], random, triangles);
+    for (let i = 0; i + 2 < count; i += 3) split([corner(i), corner(i + 1), corner(i + 2)], random, triangles, this.maxEdge);
 
     // Chunks: a seeded offset per mesh keeps the cell grid from lining up with every block edge.
     const jitter = new THREE.Vector3(random(), random(), random()).multiplyScalar(CELL);

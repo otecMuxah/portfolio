@@ -5,11 +5,14 @@ import { PALETTE } from '../art/palette';
 import { gather, gatherDelays } from '../art/particles';
 import { ChapterBuilder } from '../chapter-scene';
 
+/** Particles in the cloud; phones get half (#16). */
 const COUNT = 1200;
+const PHONE_COUNT = 600;
 const SEED = 1981;
 
 /** 1981: warm particles drift in a wide cloud and gather into Kharkiv's skyline, which fades in as they land. */
-export const birth: ChapterBuilder = () => {
+export const birth: ChapterBuilder = (_chapter, _index, phone = false) => {
+  const count = phone ? PHONE_COUNT : COUNT;
   const object = new THREE.Group();
 
   const skyline = kharkivSkyline();
@@ -25,8 +28,8 @@ export const birth: ChapterBuilder = () => {
   object.add(skyline);
 
   const random = seeded(SEED);
-  const cloud = new Float32Array(COUNT * 3);
-  for (let i = 0; i < COUNT; i++) {
+  const cloud = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
     // A wide flat ellipse over the plot, ending short of the car lane (z < 4).
     const angle = random() * Math.PI * 2;
     const r = Math.sqrt(random());
@@ -34,8 +37,8 @@ export const birth: ChapterBuilder = () => {
     cloud[i * 3 + 1] = 2 + random() * 16;
     cloud[i * 3 + 2] = -4 + Math.sin(angle) * r * 6.5;
   }
-  const targets = kharkivSkylinePoints(COUNT, SEED);
-  const delays = gatherDelays(COUNT, SEED);
+  const targets = kharkivSkylinePoints(count, SEED);
+  const delays = gatherDelays(count, SEED);
   const geometry = new THREE.BufferGeometry();
   const position = new THREE.BufferAttribute(cloud.slice(), 3).setUsage(THREE.DynamicDrawUsage);
   geometry.setAttribute('position', position);

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ChapterSpan } from '../journey/journey';
+import { ChapterSpan, spanAt } from '../journey/journey';
 
 /** The camera travels a road beside the scenes, framing each subject from the front-right (a 3/4 view). */
 export const CAMERA_OFFSET = new THREE.Vector3(18, 7, 16);
@@ -14,6 +14,8 @@ export const CAR_OFFSET = new THREE.Vector3(12, 0, 2);
  */
 const WAR_PARK = 0.12;
 const WAR_STOP = 0.3;
+/** Reduced motion holds the war here: its world gone (SHATTERED, shatter.ts), the drive out not begun (DRIVE, escape.ts). */
+const WAR_STILL = 0.81;
 
 /** Where the camera is along the road (anchor units) at given progress points; linear between them. */
 export function roadStops(spans: ChapterSpan[]): [progress: number, at: number][] {
@@ -54,4 +56,13 @@ export function cameraPath(anchors: THREE.Vector3[]): THREE.CatmullRomCurve3 {
 /** Where the car rides when the camera is at `camera` on its path: the framed point plus CAR_OFFSET. Writes `out`. */
 export function carFrom(camera: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
   return out.copy(camera).sub(CAMERA_OFFSET).add(CAR_OFFSET);
+}
+
+/**
+ * Reduced motion (#16): the one progress each chapter holds still at, for any `progress` within it. The middle of its
+ * span, where the camera frames it; the war once its world has broken and before the drive out. Pure.
+ */
+export function stillAt(spans: ChapterSpan[], progress: number): number {
+  const { chapter, start, end } = spanAt(spans, progress);
+  return start + (chapter.phase === 'shatter' ? WAR_STILL : 0.5) * (end - start);
 }
