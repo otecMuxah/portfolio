@@ -1,0 +1,146 @@
+// Test helpers shared by the chapter scene specs; not part of the app bundle.
+import { describe, expect, it, vi } from 'vitest';
+import * as THREE from 'three';
+import { CHAPTERS, ChapterId } from '../../content/life';
+import { ChapterScene } from '../chapter-scene';
+import { CHAPTER_BUILDERS } from '.';
+
+/** Builds a chapter's scene, as the engine would. */
+export function build(id: ChapterId): ChapterScene {
+  const index = CHAPTERS.findIndex((c) => c.id === id);
+  return CHAPTER_BUILDERS[CHAPTERS[index].scene](CHAPTERS[index], index);
+}
+
+/** Builds a chapter's scene and poses it at a local progress. */
+export function built(id: ChapterId, local: number, time = 3): THREE.Object3D {
+  const scene = build(id);
+  scene.update?.({ progress: 0, local, time });
+  scene.object.updateMatrixWorld(true);
+  return scene.object;
+}
+
+export function stats(object: THREE.Object3D) {
+  let triangles = 0;
+  let drawCalls = 0;
+  let particles = 0;
+  let lights = 0;
+  object.traverse((obj) => {
+    if (obj instanceof THREE.Light) lights++;
+    if (obj instanceof THREE.Points) {
+      drawCalls++;
+      particles += obj.geometry.getAttribute('position').count;
+    } else if (obj instanceof THREE.Mesh) {
+      drawCalls++;
+      const g = obj.geometry;
+      const perInstance = (g.index ? g.index.count : g.getAttribute('position').count) / 3;
+      triangles += perInstance * (obj instanceof THREE.InstancedMesh ? obj.count : 1);
+    } else if (obj instanceof THREE.Line) drawCalls++;
+    else if (obj instanceof THREE.Sprite) {
+      drawCalls++;
+      triangles += 2;
+    }
+  });
+  return { triangles, drawCalls, particles, lights };
+}
+
+/** Every visible vertex, in world space; instanced meshes count each instance. */
+export function vertices(object: THREE.Object3D): THREE.Vector3[] {
+  const out: THREE.Vector3[] = [];
+  const instance = new THREE.Matrix4();
+  object.traverseVisible((obj) => {
+    if (obj instanceof THREE.Mesh || obj instanceof THREE.Points || obj instanceof THREE.Line) {
+      const pos = obj.geometry.getAttribute('position');
+      const matrices =
+        obj instanceof THREE.InstancedMesh
+          ? Array.from({ length: obj.count }, (_, i) => {
+              obj.getMatrixAt(i, instance);
+              return instance.clone().premultiply(obj.matrixWorld);
+            })
+          : [obj.matrixWorld];
+      for (const m of matrices)
+        for (let i = 0; i < pos.count; i++)
+          out.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(m));
+    }
+  });
+  return out;
+}
+
+/** World-space boxes of what could stand in the car's way: a box per mesh or line, a point per particle or instance vertex. */
+export function solids(object: THREE.Object3D): THREE.Box3[] {
+  const boxes: THREE.Box3[] = [];
+  object.traverseVisible((obj) => {
+    if (obj instanceof THREE.Points || obj instanceof THREE.InstancedMesh) {
+      vertices(obj).forEach((p) => boxes.push(new THREE.Box3(p, p.clone())));
+    } else if (obj instanceof THREE.Mesh || obj instanceof THREE.Line) {
+      obj.geometry.computeBoundingBox();
+      boxes.push(obj.geometry.boundingBox!.clone().applyMatrix4(obj.matrixWorld));
+    }
+  });
+  return boxes;
+}
+
+/** Where the car stands at a chapter's midpoint: anchor + CAR_OFFSET (12, 0, 2), a car's width by its length along the road. */
+export const CAR = new THREE.Box3(
+  new THREE.Vector3(11, -Infinity, -0.5),
+  new THREE.Vector3(13, Infinity, 4.5),
+);
+/** The road and the camera sit front-right of each subject (camera at (18, 7, 16)); that quadrant stays open. */
+export const ROAD_SIDE = new THREE.Box3(
+  new THREE.Vector3(4, -Infinity, 4),
+  new THREE.Vector3(Infinity, Infinity, Infinity),
+);
+
+/** jsdom has no 2D canvas; the halo gradient only needs somewhere to draw. */
+export function stubCanvas(): void {
+  const ctx = {
+    createRadialGradient: () => ({ addColorStop: () => undefined }),
+    fillRect: () => undefined,
+  };
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as never);
+}
+
+/** The art-direction contract every chapter scene keeps: budget, plot, road, and state from scroll alone. */
+export function sceneContract(id: ChapterId): void {
+  describe(id, () => {
+    it('stays within the per-chapter budget', () => {
+      const { triangles, drawCalls, particles, lights } = stats(built(id, 0.5));
+      expect(triangles).toBeLessThanOrEqual(5000);
+      expect(drawCalls).toBeLessThanOrEqual(25);
+      expect(particles).toBeLessThanOrEqual(1500);
+      // Real lights cost every fragment in the world; chapters fake theirs with glow and halos.
+      expect(lights).toBe(0);
+    });
+
+    it('keeps clear of the car on the road and the road side and stays inside its 12 m plot, before, during and after the camera', () => {
+      for (const local of [-0.5, 0, 0.5, 1, 2]) {
+        const scene = built(id, local);
+        for (const box of solids(scene)) {
+          expect(box.intersectsBox(CAR), `${id} car at local ${local}`).toBe(false);
+          expect(box.intersectsBox(ROAD_SIDE), `${id} road side at local ${local}`).toBe(false);
+        }
+        for (const v of vertices(scene)) {
+          expect(v.y, `${id} at local ${local}`).toBeLessThanOrEqual(22);
+          expect(Math.hypot(v.x, v.z), `${id} at local ${local}`).toBeLessThanOrEqual(12);
+        }
+      }
+    });
+
+    it('builds from scroll alone: the same local gives the same scene, whichever way it was reached', () => {
+      const scene = build(id);
+      const pose = () => {
+        scene.object.updateMatrixWorld(true);
+        return solids(scene.object).map((b) =>
+          b.min
+            .toArray()
+            .concat(b.max.toArray())
+            .map((v) => v.toFixed(3)),
+        );
+      };
+      scene.update?.({ progress: 0, local: 0, time: 3 });
+      const forward = pose();
+      scene.update?.({ progress: 0, local: 2, time: 3 });
+      scene.update?.({ progress: 0, local: 0, time: 3 });
+      expect(pose()).toEqual(forward);
+    });
+  });
+}

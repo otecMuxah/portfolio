@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PALETTE, PaletteKey } from './palette';
 
 export function smoothstep(edge0: number, edge1: number, x: number): number {
@@ -90,4 +91,34 @@ export function halo(key: PaletteKey, size: number, opacity = 0.6): THREE.Sprite
   );
   sprite.scale.setScalar(size);
   return sprite;
+}
+
+/** The shared soft round texture itself, for particles that need a round glow (PointsMaterial.map). */
+export { haloMap };
+
+/** A box of size w×h×d whose base sits at (x, y, z): the building block of every low-poly structure. */
+export function block(w: number, h: number, d: number, x: number, z: number, y = 0): THREE.BufferGeometry {
+  return new THREE.BoxGeometry(w, h, d).translate(x, y + h / 2, z);
+}
+
+/** Merges positioned parts into one plain Mesh of one material: one draw call, still shatterable (not instanced). */
+export function mergedMesh(parts: THREE.BufferGeometry[], material: THREE.Material): THREE.Mesh {
+  const flat = parts.map((g) => (g.index ? g.toNonIndexed() : g));
+  const geometry = mergeGeometries(flat);
+  new Set([...parts, ...flat]).forEach((g) => g.dispose());
+  return new THREE.Mesh(geometry, material);
+}
+
+/** Light spilling onto a floor or desk, faked without a light: a flat additive glow of width × depth lying at its origin. */
+export function lightPool(key: PaletteKey, width: number, depth: number): THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> {
+  const material = new THREE.MeshBasicMaterial({
+    color: PALETTE[key],
+    map: haloMap(),
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(width, depth).rotateX(-Math.PI / 2), material);
+  pool.renderOrder = 1;
+  return pool;
 }

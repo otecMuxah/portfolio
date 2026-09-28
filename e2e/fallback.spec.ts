@@ -50,6 +50,8 @@ test('when the renderer cannot start despite WebGL, the list takes over', async 
 
   await page.goto('/');
   await expect(page.locator('canvas.scene')).toHaveCount(0);
+  await expect(page.locator('app-root')).toHaveAttribute('data-scene', 'fallback');
+  await expect(page.getByRole('progressbar')).toHaveCount(0);
   await expect(story(page).getByRole('heading').first()).toBeVisible();
   expect(pageErrors).toEqual([]);
   expect(warnings.filter((w) => w.includes('story list'))).toHaveLength(1);
@@ -74,6 +76,8 @@ test.describe('without WebGL', () => {
     await page.goto('/');
 
     await expect(page.locator('canvas.scene')).toHaveCount(0);
+    await expect(page.locator('app-root')).toHaveAttribute('data-scene', 'fallback');
+    await expect(page.getByRole('progressbar')).toHaveCount(0);
     const headings = story(page).getByRole('heading', { level: 2 });
     await expect(headings).toHaveText(TITLES);
     for (const heading of await headings.all()) {

@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { PALETTE, PaletteKey } from '../art/palette';
 
-export const RING_MIN_RADIUS = 3;
-export const RING_MAX_RADIUS = 7.5;
+export const RING_MIN_RADIUS = 2.5;
+// At most 5.5 m, so no token swings out over the road on the front right.
+export const RING_MAX_RADIUS = 5.5;
 
 const clamp01 = (x: number) => Math.min(Math.max(x, 0), 1);
 

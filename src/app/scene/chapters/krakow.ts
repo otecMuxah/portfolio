@@ -44,8 +44,8 @@ export const krakow: ChapterBuilder = () => {
   const copper = lowPoly('krakowRoof');
   const stone = lowPoly('sandstone');
 
-  // The market square, flush with the ground so the car lane stays clear.
-  const square = mesh(new THREE.CylinderGeometry(9, 9.4, 0.3, 12), lowPoly('chalk'), -0.16);
+  // The market square: a low plinth under the old town, short of the road on the front right.
+  const square = mesh(new THREE.BoxGeometry(16, 0.3, 8), lowPoly('chalk'), -0.14);
   square.position.z = -4;
   // The old town is modelled at full size and scaled so both spires sit inside the frame.
   const city = new THREE.Group();
@@ -138,6 +138,7 @@ export const krakow: ChapterBuilder = () => {
     object,
     update({ local, time }) {
       const built = enter(local);
+      square.visible = built > 0;
       square.scale.setScalar(Math.max(built, 1e-3));
       risers.forEach((group, i) => {
         const delay = i < 3 ? i * 0.08 : 0.2 + (i - 3) * 0.06;

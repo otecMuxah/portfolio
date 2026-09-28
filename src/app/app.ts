@@ -38,6 +38,7 @@ const isChapterId = (id: string): id is ChapterId => CHAPTERS.some((c) => c.id =
     '[attr.data-chapter]': 'state().chapterId',
     '[attr.data-car]': 'state().carId ?? "none"',
     '[attr.data-phase]': 'state().phase',
+    '[attr.data-scene]': '!webgl() ? "fallback" : loaded() < 1 ? "loading" : "ready"',
     '(window:keydown)': 'onKey($event)',
   },
 })
@@ -53,6 +54,9 @@ export class App {
   protected readonly webgl = signal(true);
   protected readonly story = CHAPTERS.map((c) => ({ ...TEXT[c.id], id: c.id, meta: metaOf(c) }));
 
+  /** How far the 3D scene has initialised, 0..1; the loader shows until it reaches 1. */
+  protected readonly loaded = signal(0);
+  protected readonly percent = computed(() => Math.round(this.loaded() * 100));
   protected readonly state = signal<JourneyState>(journeyAt(0), { equal: sameState });
   protected readonly chapter = computed(() => CHAPTERS.find((c) => c.id === this.state().chapterId)!);
   protected readonly text = computed(() => TEXT[this.state().chapterId]);
@@ -83,6 +87,13 @@ export class App {
         console.warn('3D renderer unavailable, showing the story list instead.', error);
         return fallBack();
       }
+      engine
+        .load((progress) => this.loaded.set(progress))
+        .catch((err) => {
+          // The text is all there without the scene, so drop the loader rather than leave it stuck.
+          console.warn('3D scene failed to load', err);
+          this.loaded.set(1);
+        });
       const trigger = ScrollTrigger.create({
         trigger: this.track().nativeElement,
         start: 'top top',
