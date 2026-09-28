@@ -41,10 +41,10 @@ export const CONTACTS: Contact[] = [
 ];
 
 /**
- * Off until Mykhailo approves the PDF (#13). To publish: `npm run cv:pdf` writes
- * public/mykhailo-maliavin-cv.pdf from his CV text; commit it and set this to true.
+ * On since Mykhailo approved the PDF (#13). `npm run cv:pdf` rewrites
+ * public/mykhailo-maliavin-cv.pdf from his CV text; he reviews it again before it's committed.
  */
-export const CV_PDF_PUBLISHED = false;
+export const CV_PDF_PUBLISHED = true;
 export const CV_PDF_FILE = 'mykhailo-maliavin-cv.pdf';
 
 export const CV_SUMMARY =
