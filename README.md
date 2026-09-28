@@ -57,3 +57,9 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+## Deployment
+
+Every push to `develop` runs the unit tests, builds with `--base-href /portfolio/` and deploys to GitHub Pages at https://otecmuxah.github.io/portfolio/ (`.github/workflows/deploy.yml`).
+
+**Custom domain later:** add the domain under repo Settings → Pages → Custom domain (GitHub commits a `CNAME` file), point a DNS `CNAME` record at `otecmuxah.github.io`, and change the workflow's `--base-href /portfolio/` to `--base-href /`.
