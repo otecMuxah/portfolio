@@ -40,6 +40,13 @@ export const CONTACTS: Contact[] = [
   { label: 'GitHub', text: 'github.com/otecMuxah', href: 'https://github.com/otecMuxah' },
 ];
 
+/**
+ * Off until Mykhailo approves the PDF (#13). To publish: `npm run cv:pdf` writes
+ * public/mykhailo-maliavin-cv.pdf from his CV text; commit it and set this to true.
+ */
+export const CV_PDF_PUBLISHED = false;
+export const CV_PDF_FILE = 'mykhailo-maliavin-cv.pdf';
+
 export const CV_SUMMARY =
   'Engineering lead with over a decade building highly scalable, performant web applications - Angular and TypeScript on the front end, Java/Spring Boot and Python/Django behind it. Currently leading 6 developers within a 50-person engineering organisation at IATA.';
 

@@ -1,5 +1,14 @@
 import { Component, ElementRef, viewChild } from '@angular/core';
-import { CONTACTS, CV_SUMMARY, EDUCATION, PROFILE, ROLES, SKILLS } from '../content/cv';
+import {
+  CONTACTS,
+  CV_PDF_FILE,
+  CV_PDF_PUBLISHED,
+  CV_SUMMARY,
+  EDUCATION,
+  PROFILE,
+  ROLES,
+  SKILLS,
+} from '../content/cv';
 
 /** The recruiter's CV, rendered as HTML from the CV content in a modal over the journey. */
 @Component({
@@ -16,6 +25,8 @@ export class CvView {
   protected readonly roles = ROLES;
   protected readonly skills = SKILLS;
   protected readonly education = EDUCATION;
+  protected readonly pdfPublished = CV_PDF_PUBLISHED;
+  protected readonly pdfFile = CV_PDF_FILE;
 
   open(): void {
     const dialog = this.dialog().nativeElement;
