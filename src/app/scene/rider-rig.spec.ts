@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { chapterSpans, riderAt } from '../journey/journey';
-import { stats } from './chapters/scene-contract';
+import { CarRig } from './car-rig';
+import { stats, stubCanvas } from './chapters/scene-contract';
 import { RiderRig } from './rider-rig';
 
 const spans = chapterSpans();
@@ -19,6 +20,8 @@ function pose(rig: RiderRig, progress: number, time = 3): string[] {
 }
 
 describe('RiderRig', () => {
+  beforeAll(stubCanvas);
+
   const stops = [0, at('birth', 1), at('school', 0.5), at('lyceum', 0.5), at('university', 0), at('university', 0.5), at('dreamweaver', 0.45)];
 
   it('is one skinned mesh of one shared material: a single draw call within a small triangle budget', () => {
@@ -45,12 +48,35 @@ describe('RiderRig', () => {
     expect(new Set(shots).size).toBe(4);
   });
 
-  it('is hidden once the Golf carries the camera', () => {
+  it('waits at the door while the Golf pulls up, and is gone once he has got in', () => {
     const rig = new RiderRig();
     pose(rig, at('university', 0.5));
     expect(rig.object.visible).toBe(true);
     pose(rig, at('dreamweaver', 0.51));
+    expect(rig.object.visible).toBe(true);
+    pose(rig, at('dreamweaver', 0.6));
     expect(rig.object.visible).toBe(false);
+  });
+
+  it('lands the Golf beside him by scroll: the same arrival gives the same car, whatever the clock', () => {
+    const car = () => {
+      const rig = new CarRig();
+      return (time: number, arrival: number) => {
+        rig.update('golf2', ROAD, AHEAD, time, arrival);
+        const golf = rig.object.getObjectByName('golf2')!;
+        return [golf.visible, golf.scale.x.toFixed(5), golf.position.y.toFixed(5)];
+      };
+    };
+    const a = car();
+    const b = car();
+    expect(a(0, 0.6)).toEqual(b(50, 0.6));
+    expect(a(0.1, 0.9)).toEqual(b(0.2, 0.9));
+    // Scrolling back takes it up again, and before its year it is not there.
+    expect(a(0.3, 0.6)).toEqual(b(0.4, 0.6));
+    const c = new CarRig();
+    c.update('golf2', ROAD, AHEAD, 0, 0.6);
+    c.update(null, ROAD, AHEAD, 0.05, 0);
+    expect(c.object.children.filter((o) => o.name && o.visible)).toEqual([]);
   });
 
   it('builds nothing while it poses: the same bones, geometry and matrices every frame', () => {

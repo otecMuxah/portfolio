@@ -93,8 +93,12 @@ const SHOTS: [name: string, progress: number, rider: string][] = [
   ['05-run-to-bike-1998', at('university', 0.03), 'bike'],
   ['06-bike-university', at('university', 0.5), 'bike'],
   ['07-bike-first-websites', at('dreamweaver', 0.2), 'bike'],
-  ['08-handover-off-the-bike', at('dreamweaver', 0.44), 'bike'],
-  ['09-handover-waiting', at('dreamweaver', 0.49), 'bike'],
+  ['08-handover-off-the-bike', at('dreamweaver', 0.43), 'bike'],
+  ['09-handover-at-the-door', at('dreamweaver', 0.495), 'bike'],
+  ['10-handover-golf2-pulls-up', at('dreamweaver', 0.515), 'none'],
+  ['11-handover-golf2-landed', at('dreamweaver', 0.535), 'none'],
+  ['12-handover-getting-in', at('dreamweaver', 0.543), 'none'],
+  ['13-golf2-carries-him', at('dreamweaver', 0.6), 'none'],
 ];
 
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -137,13 +141,9 @@ test('each stage, the blends between them and the handover to the Golf 2, on cam
   // Every stage looks different where it is framed.
   for (const [a, b] of [[0, 2], [2, 3], [3, 5]]) expect(await pixelDiff(page, shots[a], shots[b])).toBeGreaterThan(0.002);
 
-  // The Golf drops in where he waited; its arrival plays over 0.9 s of clock time (car-rig.ts), not scroll.
-  await shoot(page, at('dreamweaver', 0.52), '10-handover-golf2');
-  await page.waitForTimeout(1200);
-  await page.locator('canvas.scene').screenshot({ path: `${EVIDENCE}/10-handover-golf2.png` });
-  await expect(page.locator(root)).toHaveAttribute('data-rider', 'none');
+  // The Golf pulls up beside him by scroll, then he gets in: each step of the handover is its own frame.
+  for (const [a, b] of [[7, 8], [8, 9], [9, 10], [10, 11], [11, 12]]) expect(await pixelDiff(page, shots[a], shots[b])).toBeGreaterThan(0.001);
   await expect(page.locator(root)).toHaveAttribute('data-car', 'golf2');
-  budget['10-handover-golf2'] = (await sceneInfo(page)).frame;
   writeFileSync(`${EVIDENCE}/budget.json`, JSON.stringify(budget, null, 2));
   expect(errors).toEqual([]);
 });
@@ -154,10 +154,10 @@ test('scrolling back past the Golf returns him exactly as he was', async ({ page
   await visit(page, '/');
   await built(page);
   const walking = at('school', 0.5);
-  const forward = await shoot(page, walking, '11-walk-forward');
+  const forward = await shoot(page, walking, '14-walk-forward');
   for (const p of [at('lyceum', 0.5), at('university', 0.5), at('dreamweaver', 0.6), at('family', 0.5)]) await snapTo(page, p);
   for (const p of [at('dreamweaver', 0.6), at('university', 0.5), at('lyceum', 0.5)]) await snapTo(page, p);
-  const back = await shoot(page, walking, '12-walk-after-reverse');
+  const back = await shoot(page, walking, '15-walk-after-reverse');
   await expect(page.locator(root)).toHaveAttribute('data-rider', 'walk');
   expect(await pixelDiff(page, forward, back)).toBeLessThan(0.02);
   expect(errors).toEqual([]);
@@ -194,7 +194,7 @@ test.describe('on a phone', () => {
     const errors = collectErrors(page);
     await visit(page, '/');
     await built(page);
-    await shoot(page, at('university', 0.5), '13-bike-390');
+    await shoot(page, at('university', 0.5), '16-bike-390');
     await expect(page.locator(root)).toHaveAttribute('data-rider', 'bike');
     expect(errors).toEqual([]);
   });
