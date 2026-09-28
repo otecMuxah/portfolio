@@ -103,7 +103,7 @@ export const EN: Record<ChapterId, ChapterText> = {
           'Led a team of 5 as head of the front-end function.',
         ],
         domain: 'edtech',
-        tech: ['Angular', 'Ionic', 'Capacitor'],
+        tech: ['Angular', 'Nx', 'NgRx'],
       },
       {
         company: 'PENTASOFT',
