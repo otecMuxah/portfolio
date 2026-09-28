@@ -23,7 +23,7 @@ const KEEPS_KEYS = 'input, textarea, select, [contenteditable]:not([contentedita
 const PENDING_MS = 1500;
 
 const sameState = (a: JourneyState, b: JourneyState) =>
-  a.chapterId === b.chapterId && a.carId === b.carId && a.phase === b.phase;
+  a.chapterId === b.chapterId && a.carId === b.carId && a.riderId === b.riderId && a.phase === b.phase;
 
 const years = (c: Chapter) => (c.year === undefined ? '' : c.yearEnd ? `${c.year} – ${c.yearEnd}` : `${c.year}`);
 
@@ -39,6 +39,7 @@ const isChapterId = (id: string): id is ChapterId => CHAPTERS.some((c) => c.id =
   host: {
     '[attr.data-chapter]': 'state().chapterId',
     '[attr.data-car]': 'state().carId ?? "none"',
+    '[attr.data-rider]': 'state().riderId ?? "none"',
     '[attr.data-phase]': 'state().phase',
     '[attr.data-scene]': '!webgl() ? "fallback" : loaded() < 1 ? "loading" : "ready"',
     '(window:keydown)': 'onKey($event)',
