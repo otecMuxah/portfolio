@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { collectErrors, root, scrollJourney, scrollToChapter } from './support';
+import { collectErrors, root, scrollJourney, scrollToChapter, visit } from './support';
 
 test('scrolling walks the visitor through each chapter in order', async ({ page }) => {
   const errors = collectErrors(page);
 
-  await page.goto('/');
+  await visit(page, '/');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
   await expect(page.locator('.card__title')).toHaveText('Born in Kharkiv');
   await expect(page.locator(root)).toHaveAttribute('data-car', 'none');
@@ -30,7 +30,7 @@ test('scrolling walks the visitor through each chapter in order', async ({ page 
 });
 
 test('the war chapter tells the night of 24 February 2022, with no placeholder flag', async ({ page }) => {
-  await page.goto('/#war');
+  await visit(page, '/#war');
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'shatter');
   await expect(page.locator('.card__title')).toHaveText('24.02.2022');
   await expect(page.locator('.card')).toContainText('4 a.m. Explosions.');
@@ -41,7 +41,7 @@ test('the timeline highlights the current chapter and clicking an item flies the
   const errors = collectErrors(page);
   const timeline = page.getByRole('navigation', { name: 'Timeline' });
 
-  await page.goto('/');
+  await visit(page, '/');
   await expect(timeline).toBeVisible();
   await expect(timeline.getByRole('link', { name: /Birth/ })).toHaveAttribute('aria-current', 'step');
 
@@ -61,7 +61,7 @@ test('the timeline highlights the current chapter and clicking an item flies the
 test('a chapter deep link lands on that chapter', async ({ page }) => {
   const errors = collectErrors(page);
 
-  await page.goto('/#ciklum');
+  await visit(page, '/#ciklum');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'ciklum');
   await expect(page.locator(root)).toHaveAttribute('data-car', 'f30');
   await expect(page.locator('.card__title')).toHaveText('Ciklum: starting from scratch');
@@ -70,7 +70,7 @@ test('a chapter deep link lands on that chapter', async ({ page }) => {
 });
 
 test('arrow and page keys move between chapters; Tab reaches timeline items', async ({ page }) => {
-  await page.goto('/');
+  await visit(page, '/');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
 
   await page.keyboard.press('ArrowDown');
@@ -92,7 +92,7 @@ test('arrow and page keys move between chapters; Tab reaches timeline items', as
 });
 
 test('arrow and page keys stay with text fields and scroll the open CV dialog', async ({ page }) => {
-  await page.goto('/');
+  await visit(page, '/');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
 
   await page.evaluate(() => {

@@ -19,10 +19,11 @@ export class CarRig {
   private outgoing: CarId | null = null;
   private swapStart = -Infinity;
 
+  // Everything starts visible so the engine's first compile covers it (compile skips hidden objects);
+  // update() sets visibility before anything renders.
   constructor() {
     for (const { id } of CARS) {
       const car = buildCar(id);
-      car.visible = false;
       this.cars.set(id, car);
       this.object.add(car);
     }
@@ -30,7 +31,6 @@ export class CarRig {
       new THREE.RingGeometry(0.8, 1, 24).rotateX(-Math.PI / 2),
       new THREE.MeshBasicMaterial({ color: '#e8c89a', transparent: true, depthWrite: false, side: THREE.DoubleSide }),
     );
-    this.ring.visible = false;
     this.object.add(this.ring);
   }
 

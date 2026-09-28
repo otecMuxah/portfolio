@@ -2,6 +2,20 @@
   <canvas #canvas class="scene" aria-hidden="true"></canvas>
 }
 
+@if (webgl() && loaded() < 1) {
+  <div
+    class="loader"
+    role="progressbar"
+    aria-label="Loading the 3D journey"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    [attr.aria-valuenow]="percent()"
+  >
+    <div class="loader__bar" [style.width.%]="percent()"></div>
+    <p class="loader__label">Loading the journey · {{ percent() }}%</p>
+  </div>
+}
+
 <button type="button" class="skip-cv" (click)="cv.open()">Skip to CV</button>
 <app-cv-view #cv />
 

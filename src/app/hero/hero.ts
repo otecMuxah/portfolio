@@ -1,11 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, afterNextRender, signal } from '@angular/core';
 import { CONTACTS, PROFILE } from '../content/cv';
 import { ageOn } from './age';
 
 @Component({
   selector: 'app-hero',
   template: `
-    <h1 class="hero__tagline">{{ age }} years, one journey.</h1>
+    <h1 class="hero__tagline">@if (age() !== null) {<span>{{ age() }} years, </span>}one journey.</h1>
     <p class="hero__name">{{ profile.name }}</p>
     <p class="hero__title">{{ profile.title }}</p>
     <ul class="hero__contacts" aria-label="Contact">
@@ -64,5 +64,10 @@ import { ageOn } from './age';
 export class Hero {
   protected readonly profile = PROFILE;
   protected readonly contacts = CONTACTS;
-  protected readonly age = ageOn(PROFILE.birthDate, new Date());
+  /** Computed in the visitor's browser only, so the prerendered page never carries a stale age. */
+  protected readonly age = signal<number | null>(null);
+
+  constructor() {
+    afterNextRender(() => this.age.set(ageOn(PROFILE.birthDate, new Date())));
+  }
 }

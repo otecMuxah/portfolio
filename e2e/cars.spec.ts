@@ -1,5 +1,5 @@
 import { Page, expect, test } from '@playwright/test';
-import { collectErrors, root, scrollJourney, scrollToChapter } from './support';
+import { collectErrors, root, scrollJourney, scrollToChapter, visit } from './support';
 
 /** Scroll through the whole journey in small steps and return each distinct car shown, in order. */
 async function carsWhileScrolling(page: Page, direction: 'forward' | 'back'): Promise<string[]> {
@@ -20,7 +20,7 @@ async function carsWhileScrolling(page: Page, direction: 'forward' | 'back'): Pr
 test('the car he owned carries the camera, swapping as the scrolled year passes each purchase', async ({ page }) => {
   test.setTimeout(90_000); // two full scroll sweeps plus the chapter scan, one frame per step
   const errors = collectErrors(page);
-  await page.goto('/');
+  await visit(page, '/');
 
   const owned = ['none', 'golf2', 'mazda323f', 'mazda3', 'forester', 'f30'];
   // The garage finale shows all five side by side, so nothing carries the camera there.
