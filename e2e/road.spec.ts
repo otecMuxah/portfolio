@@ -135,8 +135,13 @@ test('two passes over the whole journey allocate no new GPU geometry or textures
     return { geometries, textures };
   };
   const stops = [...spans.map(({ chapter }) => at(chapter.id, 0.5)), ...[0.25, 0.5, 0.75, 1].map(driveProgress)].sort((a, b) => a - b);
+  // Settled at each stop, a timed car swap done, so both passes draw the same frames.
   const pass = async () => {
-    for (const p of [...stops, ...[...stops].reverse()]) await snapTo(page, p);
+    for (const p of [...stops, ...[...stops].reverse()]) {
+      await snapTo(page, p);
+      await expect.poll(async () => (await sceneInfo(page)).settled, { timeout: 20_000 }).toBe(true);
+      await page.waitForTimeout(400);
+    }
     return sample();
   };
   const first = await pass();
