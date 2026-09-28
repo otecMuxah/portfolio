@@ -20,8 +20,9 @@ test('scrolling walks the visitor through each chapter in order', async ({ page 
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'rebuild');
 
   await scrollJourney(page, 1);
-  await expect(page.locator(root)).toHaveAttribute('data-chapter', 'garage');
-  await expect(page.locator(root)).toHaveAttribute('data-phase', 'garage');
+  await expect(page.locator(root)).toHaveAttribute('data-chapter', 'iata');
+  await expect(page.locator(root)).toHaveAttribute('data-phase', 'rebuild');
+  await expect(page.locator('.card__title')).toHaveText('IATA');
 
   await scrollJourney(page, 0);
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');

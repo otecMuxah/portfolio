@@ -39,7 +39,7 @@ export function carFor(year: number, cars: Car[] = CARS): Car | null {
 
 /**
  * The year the scroll has reached: runs linearly from the chapter's start year to the next dated
- * chapter's start year across the chapter's span. Undated chapters (the garage) have no year.
+ * chapter's start year across the chapter's span. Undated chapters have no year.
  */
 export function yearAt(spans: ChapterSpan[], progress: number): number | undefined {
   const { chapter, index, start, end } = spanAt(spans, progress);

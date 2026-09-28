@@ -16,7 +16,6 @@ const TITLES = [
   '24.02.2022',
   'Ciklum: starting from scratch',
   'IATA',
-  'The garage',
 ];
 
 const story = (page: Page) => page.getByRole('list', { name: 'Life story' });

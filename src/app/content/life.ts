@@ -1,6 +1,6 @@
 import { EN } from './life.en';
 
-export type Phase = 'build' | 'shatter' | 'rebuild' | 'garage';
+export type Phase = 'build' | 'shatter' | 'rebuild';
 
 /** Which builder renders a chapter's 3D scene (see scene/chapters). */
 export type SceneKind =
@@ -18,8 +18,7 @@ export type SceneKind =
   | 'back-home'
   | 'war'
   | 'ciklum'
-  | 'iata'
-  | 'garage';
+  | 'iata';
 
 export type ChapterId =
   | 'birth'
@@ -35,8 +34,7 @@ export type ChapterId =
   | 'back-home'
   | 'war'
   | 'ciklum'
-  | 'iata'
-  | 'garage';
+  | 'iata';
 
 export interface Chapter {
   id: ChapterId;
@@ -103,7 +101,6 @@ export const CHAPTERS: Chapter[] = [
   { id: 'war', year: 2022, phase: 'shatter', scene: 'war', scrollWeight: 3 },
   { id: 'ciklum', year: 2022, yearEnd: 2024, phase: 'rebuild', scene: 'ciklum', scrollWeight: 2.4 },
   { id: 'iata', year: 2024, yearEnd: 'now', phase: 'rebuild', scene: 'iata' },
-  { id: 'garage', phase: 'garage', scene: 'garage' },
 ];
 
 /** A country on the road out of the war: its code and the name its roadside sign reads. */
