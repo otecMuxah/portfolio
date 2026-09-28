@@ -138,9 +138,4 @@ export const EN: Record<ChapterId, ChapterText> = {
     title: 'IATA',
     body: 'Senior Full-Stack Developer (contract), leading a team of 6 developers within a 50-person engineering organisation. AI-agent delivery across AMSS, ARM Index, ATMPM and ASPAC.',
   },
-  garage: {
-    label: 'Garage',
-    title: 'The garage',
-    body: 'All five cars side by side: the red VW Golf 2, the red Mazda 323F, the blue Mazda 3, the green Subaru Forester and the black BMW 320d F30. Fixing, racing and cleaning cars.',
-  },
 };

@@ -16,7 +16,6 @@ One world, built by several hands. Every scene ticket (#5, #6, #8–#11) follows
 | first-code → back-home (2012–2022) | warm, fullest at back-home (chapter 10) | terminal, terracotta, wheat, krakowBrick/Roof, homeWarm, homeGlow |
 | war (24.02.2022) | colour drains to ash and soot; one lastLight remains | ash, soot, lastLight |
 | ciklum → iata (2022–now) | cool dawn returning to full colour; a new world, not the old one restored | dawnBlue, steel, glass, skyBlue |
-| garage | neutral studio; the cars carry the colour | concrete, studio |
 
 Author every scene in full colour. The phase grade (the drain in the war, the return in the rebuild) is applied **globally** by #9/#10, never baked into chapter materials.
 

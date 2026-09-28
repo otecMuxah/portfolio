@@ -23,9 +23,8 @@ test('the car he owned carries the camera, swapping as the scrolled year passes 
   await visit(page, '/');
 
   const owned = ['none', 'golf2', 'mazda323f', 'mazda3', 'forester', 'f30'];
-  // The garage finale shows all five side by side, so nothing carries the camera there.
-  expect(await carsWhileScrolling(page, 'forward')).toEqual([...owned, 'none']);
-  expect(await carsWhileScrolling(page, 'back')).toEqual([...owned, 'none'].reverse());
+  expect(await carsWhileScrolling(page, 'forward')).toEqual(owned);
+  expect(await carsWhileScrolling(page, 'back')).toEqual([...owned].reverse());
 
   // Mid-family is 2007: still the Mazda 3; the Forester (2008) arrives with the rally chapter.
   await scrollToChapter(page, 'family');

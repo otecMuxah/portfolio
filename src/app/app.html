@@ -86,9 +86,6 @@
       </li>
     }
   </ol>
-  @if (webgl() && state().phase === 'garage') {
-    <app-garage />
-  }
   @if (webgl()) {
     <article class="card" aria-hidden="true">
       @if (text().placeholder) {
