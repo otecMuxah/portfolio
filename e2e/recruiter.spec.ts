@@ -1,7 +1,11 @@
+import { readFile } from 'node:fs/promises';
 import { Page, expect, test } from '@playwright/test';
+import { CV_PDF_PUBLISHED } from '../src/app/content/cv';
 import { ready, scrollToChapter, visit } from './support';
 
 const skipToCv = (page: Page) => page.getByRole('button', { name: 'Skip to CV' });
+const downloadCv = (page: Page) =>
+  page.getByRole('dialog', { name: 'CV' }).getByRole('link', { name: 'Download CV (PDF)' });
 
 async function expectCvShown(page: Page) {
   const cv = page.getByRole('dialog', { name: 'CV' });
@@ -76,4 +80,24 @@ test('contact links are email, LinkedIn and GitHub, and no phone number is rende
   expect(html).not.toMatch(/tel:/i);
   expect(html).not.toMatch(/\+\d[\d\s().-]{7,}\d/);
   expect(html).not.toMatch(/\d{3}[\s.-]\d{4}[\s.-]\d{4}/);
+});
+
+test('the download link returns a PDF', async ({ page }) => {
+  test.skip(!CV_PDF_PUBLISHED, 'CV_PDF_PUBLISHED is off until Mykhailo approves the PDF (#13)');
+  await visit(page, '/');
+  await skipToCv(page).click();
+  const [download] = await Promise.all([page.waitForEvent('download'), downloadCv(page).click()]);
+  expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+  const bytes = await readFile((await download.path())!);
+  expect(bytes.subarray(0, 5).toString()).toBe('%PDF-');
+  const response = await page.request.get((await downloadCv(page).getAttribute('href'))!);
+  expect(response.headers()['content-type']).toContain('application/pdf');
+});
+
+test('no CV download link is shown before the PDF is approved', async ({ page }) => {
+  test.skip(CV_PDF_PUBLISHED, 'the PDF is published');
+  await visit(page, '/');
+  await skipToCv(page).click();
+  await expectCvShown(page);
+  await expect(downloadCv(page)).toHaveCount(0);
 });

@@ -58,12 +58,12 @@ test('a loader shows progress until the 3D scene is ready, without hiding the fi
   const loader = page.getByRole('progressbar', { name: 'Loading the 3D journey' });
   await expect(loader).toBeVisible();
   // Screen readers and crawlers get the first chapter while the scene loads.
-  await expect(page.getByRole('heading', { name: 'Born in Kharkiv' })).toBeVisible();
+  await expect(page.locator('.card__title')).toHaveText('Born in Kharkiv');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('one journey.');
 
   release();
   await expect(loader).toBeHidden();
   await expect(page.locator(root)).toHaveAttribute('data-scene', 'ready');
-  await expect(page.getByRole('heading', { name: 'Born in Kharkiv' })).toBeVisible();
+  await expect(page.locator('.card__title')).toHaveText('Born in Kharkiv');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^\d+ years, one journey\.$/);
 });

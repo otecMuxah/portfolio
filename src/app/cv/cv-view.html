@@ -17,6 +17,9 @@
         </li>
       }
     </ul>
+    @if (pdfPublished) {
+      <a class="cv__download" [href]="pdfFile" download>Download CV (PDF)</a>
+    }
     <button type="button" class="cv__close" (click)="close()">Close</button>
   </header>
 

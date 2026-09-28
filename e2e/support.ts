@@ -2,6 +2,14 @@ import { Page, expect } from '@playwright/test';
 
 export const root = 'app-root';
 
+/** Console errors and uncaught page errors seen from now on. */
+export function collectErrors(page: Page): string[] {
+  const errors: string[] = [];
+  page.on('console', (msg) => msg.type() === 'error' && errors.push(msg.text()));
+  page.on('pageerror', (err) => errors.push(err.message));
+  return errors;
+}
+
 /**
  * Wait until the app has hydrated and the first chapter's scene is up. The prerendered HTML
  * already carries the state readout, so without this a test can act before scroll and key
