@@ -103,6 +103,24 @@ export const CHAPTERS: Chapter[] = [
   { id: 'iata', year: 2024, yearEnd: 'now', phase: 'rebuild', scene: 'iata' },
 ];
 
+/** A country on the road out of the war: its code and the name its roadside sign reads. */
+export interface RouteCountry {
+  code: string;
+  name: string;
+}
+
+/** February 2022: the way he drove his family out of the war, in the F30, in order. */
+export const ESCAPE_ROUTE: RouteCountry[] = [
+  { code: 'MD', name: 'Moldova' },
+  { code: 'RO', name: 'Romania' },
+  { code: 'SI', name: 'Slovenia' },
+  { code: 'IT', name: 'Italy' },
+  { code: 'FR', name: 'France' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'FR', name: 'France' },
+  { code: 'DE', name: 'Germany' },
+];
+
 export const CARS: Car[] = [
   { id: 'golf2', name: 'VW Golf 2', colour: 'red', fromYear: 2003 },
   { id: 'mazda323f', name: 'Mazda 323F (BA)', colour: 'red', fromYear: 2004 },

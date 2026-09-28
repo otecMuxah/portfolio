@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CHAPTERS } from '../../content/life';
-import { built, sceneContract, stubCanvas } from './scene-contract';
+import { SPLIT, driveProgress } from '../escape';
+import { build, built, sceneContract, stubCanvas } from './scene-contract';
 
 describe('war scene', () => {
   beforeAll(stubCanvas);
@@ -25,6 +26,21 @@ describe('war scene', () => {
       expect(m.userData['ungraded']).toBe(true);
       expect((m as THREE.MeshStandardMaterial).fog).toBe(false);
     }
+  });
+
+  it('gives its light up to the F30 once the drive out has split it into headlights, and takes it back in reverse', () => {
+    const scene = build('war');
+    const shown = (progress: number) => {
+      scene.update?.({ progress, local: 1, time: 3 });
+      let count = 0;
+      scene.object.traverseVisible((o) => (count += (o as THREE.Mesh).material ? 1 : 0));
+      return count;
+    };
+    const before = shown(driveProgress(0));
+    expect(before).toBeGreaterThan(0);
+    expect(shown(driveProgress(SPLIT))).toBe(0);
+    expect(shown(driveProgress(0.5))).toBe(0);
+    expect(shown(driveProgress(0))).toBe(before);
   });
 
   sceneContract('war');
