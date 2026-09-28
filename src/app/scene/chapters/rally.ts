@@ -13,6 +13,15 @@ const SPRAY = 700;
 const HAZE = 500;
 
 /**
+ * How far the stage road runs along the car's lane, in metres before and after where the car stands at the chapter's
+ * midpoint: the town road (road.ts) gives way to the gravel over it.
+ */
+export function stageAlong(index: number): [from: number, to: number] {
+  const stride = chapterAnchor(index + 1).distanceTo(chapterAnchor(index - 1)) / 2;
+  return [-0.55 * stride, 0.75 * stride];
+}
+
+/**
  * A gravel stage in autumn forest: the stage road under the car's lane, a berm, spectator tape,
  * a chevron board with hay bales at the corner, and the dust the passing Forester kicks up.
  * The Forester itself is the engine's car rig; the dust follows it from scroll alone.
@@ -45,8 +54,7 @@ export const rally: ChapterBuilder = (_chapter, index) => {
 
   // Forest floor, a gravel road over it with darker wheel ruts.
   const floor = new THREE.Mesh(new THREE.CircleGeometry(11.6, 9).rotateX(-Math.PI / 2), lowPoly('ash'));
-  const roadStart = carAlong(-0.05);
-  const roadEnd = carAlong(1.25);
+  const [roadStart, roadEnd] = stageAlong(index);
   const road = new THREE.Group();
   road.name = 'stage-road';
   road.add(strip(roadStart, roadEnd, -ROAD_HALF_WIDTH, ROAD_HALF_WIDTH, 0.03, 0.5, random, lowPoly('gravel')));

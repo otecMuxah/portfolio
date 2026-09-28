@@ -8,17 +8,12 @@ import { CHAPTER_BUILDERS } from './chapters';
 import { LIGHT } from './chapters/war';
 import { BENDS, DRIVE, EscapeRoute, chaseAt, chaseCamera, driveAt, fallIn } from './escape';
 import { GRADE_UNIFORMS, dawnAt, gradeAll, gradeAt, gradeColor } from './grade';
+import { CAMERA_OFFSET, CAR_OFFSET, cameraPath, carFrom, pathT, roadStops } from './path';
 import { RiderRig } from './rider-rig';
+import { Road } from './road';
 import { Shatter, shakeAt } from './shatter';
 
-/** The camera travels a road beside the scenes, framing each subject from the front-right (a 3/4 view). */
-const CAMERA_OFFSET = new THREE.Vector3(18, 7, 16);
 const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
-/**
- * Where the car rides relative to the point the camera frames (camera minus CAMERA_OFFSET): at a chapter's
- * midpoint that is the anchor, putting the car on the road outside the scene footprint (art-direction.md).
- */
-const CAR_OFFSET = new THREE.Vector3(12, 0, 2);
 /**
  * On a phone held sideways the screen is short and the card folds along its foot, so the camera, the road's and the
  * chase's alike, stands this much further from what it looks at, and looks this far lower, lifting the subject and the
@@ -26,26 +21,8 @@ const CAR_OFFSET = new THREE.Vector3(12, 0, 2);
  */
 const LANDSCAPE_PHONE_BACK = 1.3;
 const LANDSCAPE_PHONE_DROP = 3;
-/**
- * In the war the camera parks just past back-home, so the world it built breaks in frame: it creeps this far (in
- * anchor units) and stops this share of the way into the chapter. The chapter after picks the road up from there.
- */
-const WAR_PARK = 0.12;
-const WAR_STOP = 0.3;
 const NIGHT = new THREE.Color(PALETTE.night);
 const DAWN_SKY = new THREE.Color(PALETTE.dawnSky);
-
-/** Where the camera is along the road (anchor units) at given progress points; linear between them. */
-function roadStops(spans: ChapterSpan[]): [progress: number, at: number][] {
-  return spans.flatMap(({ chapter, index, start, end }): [number, number][] =>
-    chapter.phase === 'shatter'
-      ? [
-          [start + WAR_STOP * (end - start), index - 1 + WAR_PARK],
-          [end, index - 1 + WAR_PARK],
-        ]
-      : [[(start + end) / 2, index]],
-  );
-}
 
 /** Owns the Three.js renderer, camera and loop. Runs outside Angular change detection. */
 export class SceneEngine {
@@ -75,6 +52,8 @@ export class SceneEngine {
   private readonly route?: EscapeRoute;
   private readonly chase = new THREE.Vector3();
   private readonly chaseLook = new THREE.Vector3();
+  /** The road and pavement under the whole journey, joining the escape road at Ciklum. */
+  private readonly road: Road;
   private shatter?: Shatter;
   private target = 0;
   private disposed = false;
@@ -97,7 +76,7 @@ export class SceneEngine {
     this.scene.add(sun);
 
     this.anchors = spans.map((_, i) => chapterAnchor(i));
-    this.path = new THREE.CatmullRomCurve3(this.anchors.map((a) => a.clone().add(CAMERA_OFFSET)));
+    this.path = cameraPath(this.anchors);
     this.stops = roadStops(spans);
     this.war = spans.find((s) => s.chapter.phase === 'shatter');
     if (this.war) this.route = this.escapeRoute(this.war);
@@ -110,6 +89,9 @@ export class SceneEngine {
       gradeAll(this.route.object);
       this.scene.add(this.route.object);
     }
+    this.road = new Road(this.path, this.stops, spans, this.route?.length);
+    gradeAll(this.road.object);
+    this.scene.add(this.road.object);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -257,7 +239,7 @@ export class SceneEngine {
     const t = this.pathT(this.current);
     this.camera.position.copy(this.path.getPoint(t));
     this.look.copy(this.camera.position).sub(CAMERA_OFFSET).add(LOOK_OFFSET);
-    this.carAt.copy(this.camera.position).sub(CAMERA_OFFSET).add(CAR_OFFSET);
+    carFrom(this.camera.position, this.carAt);
     this.path.getTangent(t, this.tangent);
     // The escape: the car drives the road out of the war, and the camera falls in behind it until it arrives.
     const drive = this.route ? driveAt(this.current) : 0;
@@ -295,6 +277,7 @@ export class SceneEngine {
     }
 
     this.route?.update(this.current, dawnAt(this.current));
+    this.road.update(this.current);
     gradeAt(this.current, this.grade);
     GRADE_UNIFORMS.uGradeSaturation.value = this.grade.saturation;
     GRADE_UNIFORMS.uGradeExposure.value = this.grade.exposure;
@@ -307,18 +290,7 @@ export class SceneEngine {
 
   /** The middle of each chapter's scroll span puts the camera on that chapter's anchor; the war parks it (roadStops). */
   private pathT(progress: number): number {
-    const stops = this.stops;
-    let at = stops[stops.length - 1][1];
-    if (progress <= stops[0][0]) at = stops[0][1];
-    else
-      for (let i = 1; i < stops.length; i++) {
-        if (progress < stops[i][0]) {
-          const k = (progress - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]);
-          at = stops[i - 1][1] + (stops[i][1] - stops[i - 1][1]) * k;
-          break;
-        }
-      }
-    return Math.min(Math.max(at / (this.spans.length - 1), 0), 1);
+    return pathT(this.stops, this.spans.length, progress);
   }
 
   private resize(): void {
