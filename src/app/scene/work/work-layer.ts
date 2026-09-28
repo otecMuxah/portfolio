@@ -21,19 +21,19 @@ export const TURN = 0.08;
 
 const clamp01 = (x: number) => Math.min(Math.max(x, 0), 1);
 
-/** The local progress at which step `k` of `n` stands alone, facing the camera: centred on the chapter's midpoint. */
-export function stepMoment(k: number, n: number): number {
-  return 0.5 + STEP_GAP * (k - (n - 1) / 2);
+/** The local progress at which step `k` of `n` stands alone, facing the camera: centred on `centre`, `gap` apart. */
+export function stepMoment(k: number, n: number, centre = 0.5, gap = STEP_GAP): number {
+  return centre + gap * (k - (n - 1) / 2);
 }
 
 /**
  * Which of `n` steps shows at `local`, as a continuous index: whole numbers between turns, fractional during one.
  * Pure, so scrolling back turns the steps back exactly.
  */
-export function stepAt(local: number, n: number): number {
+export function stepAt(local: number, n: number, centre = 0.5, gap = STEP_GAP): number {
   let at = 0;
   for (let k = 0; k < n - 1; k++) {
-    const turn = (stepMoment(k, n) + stepMoment(k + 1, n)) / 2;
+    const turn = (stepMoment(k, n, centre, gap) + stepMoment(k + 1, n, centre, gap)) / 2;
     at += smoothstep(turn - TURN / 2, turn + TURN / 2, local);
   }
   return at;
@@ -79,16 +79,24 @@ interface Placement {
   sign: [x: number, z: number, height: number];
   /** The ring's centre. */
   ring: [x: number, y: number, z: number];
+  /** Where the camera frames the chapter (local progress) and how far apart its company steps are. */
+  schedule: [centre: number, gap: number];
 }
 
 /** Behind the subject, over the skyline, where the camera's frame is free on desktop and phone alike. */
-const PLACEMENT: Placement = { sign: [-4.5, -4, 12], ring: [-5, 7.5, 4.5] };
+const PLACEMENT: Placement = {
+  sign: [-4.5, -4, 12],
+  ring: [-5, 7.5, 4.5],
+  schedule: [0.5, STEP_GAP],
+};
 /** Where a chapter's own scene already stands in those places. */
 const PLACEMENTS: Partial<Record<ChapterId, Partial<Placement>>> = {
   // Above the card, which is tallest here, as the camera moves on to the third company.
   'kharkiv-career': { ring: [-5, 10, 4.5] },
   // Clear of the north spire.
   krakow: { sign: [-4.5, -4, 14] },
+  // The camera rides behind the car out of the war until the chapter's midpoint, and moves on soon after.
+  ciklum: { schedule: [0.58, 0.12] },
   // Clear of the Commerzbank tower and the planes.
   iata: { ring: [-6.5, 9, 3] },
 };
@@ -103,6 +111,12 @@ const WARM: PaletteKey[] = [
   'brick',
 ];
 const COOL: PaletteKey[] = ['glass', 'skyBlue', 'chalk', 'screenGlow', 'steel'];
+
+/** The local progress at which a chapter's company step `k` stands alone, facing the camera. */
+export function chapterMoment(id: ChapterId, k: number): number {
+  const [centre, gap] = { ...PLACEMENT, ...PLACEMENTS[id] }.schedule;
+  return stepMoment(k, workSteps(id).length, centre, gap);
+}
 
 /**
  * Adds the work layer to a career chapter's scene: a nameplate naming each company in turn, and a ring of the step's
@@ -141,7 +155,7 @@ export function withWorkLayer(scene: ChapterScene, chapter: Chapter): ChapterSce
       scene.update?.(frame);
       const built = enter(frame.local);
       const lit = smoothstep(0.85, 1, built) * (1 - 0.4 * leave(frame.local));
-      const at = stepAt(frame.local, n);
+      const at = stepAt(frame.local, n, ...place.schedule);
       sign.update(at, built, lit);
       for (let k = 0; k < n; k++) weights[k] = built * stepWeight(k, at, n);
       ring.update(weights, frame.time, lit);

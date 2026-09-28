@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { Page, expect, test } from '@playwright/test';
 import { ChapterId, DOMAIN_TEXT } from '../src/app/content/life';
 import { chapterSpans } from '../src/app/journey/journey';
-import { stepMoment, workSteps } from '../src/app/scene/work/work-layer';
+import { chapterMoment, workSteps } from '../src/app/scene/work/work-layer';
 import { collectErrors, root, scrollJourney, visit } from './support';
 
 const EVIDENCE = 'docs/analysis/50-evidence';
@@ -28,7 +28,7 @@ const sceneInfo = (page: Page) =>
 /** Journey progress at which a chapter's company step `k` stands alone, facing the camera. */
 function stepProgress(id: ChapterId, k: number): number {
   const span = chapterSpans().find((s) => s.chapter.id === id)!;
-  return span.start + (span.end - span.start) * stepMoment(k, workSteps(id).length);
+  return span.start + (span.end - span.start) * chapterMoment(id, k);
 }
 
 /** Scrolls, snaps the eased camera there and lets it render, so every pass draws exactly the same frames. */
@@ -62,8 +62,8 @@ test.describe('desktop', () => {
       await expect(section).toBeVisible();
       await expect(section.locator('.card__skills li')).toHaveText(role.tech);
       if (role.domain)
-        await expect(section.locator('.card__domain')).toHaveText(DOMAIN_TEXT.en[role.domain]);
-      else await expect(section.locator('.card__domain')).toHaveCount(0);
+        await expect(section.locator('.card__position').nth(1)).toHaveText(DOMAIN_TEXT.en[role.domain]);
+      else await expect(section.locator('.card__position')).toHaveCount(1);
       await expect
         .poll(async () => (await sceneInfo(page)).settled, { timeout: 15_000 })
         .toBe(true);

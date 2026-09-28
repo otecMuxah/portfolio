@@ -114,7 +114,7 @@
         {{ job.role }}@if (job.via) { via {{ job.via }}} · {{ job.years }}
       </p>
       @if (job.domain) {
-        <p [class]="block + '__domain'">{{ domains[job.domain] }}</p>
+        <p [class]="block + '__position'">{{ domains[job.domain] }}</p>
       }
       <ul [class]="block + '__highlights'">
         @for (line of job.highlights; track line) {

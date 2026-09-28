@@ -4,7 +4,7 @@ import { ROLES } from '../../content/cv';
 import { build, built, stubCanvas } from '../chapters/scene-contract';
 import { SLATS, slatTurn } from './nameplate';
 import { badgeScale, ringRadius, RING_MAX_RADIUS, RING_MIN_RADIUS } from './tech-ring';
-import { stepAt, stepMoment, stepWeight, workSteps } from './work-layer';
+import { chapterMoment, stepAt, stepMoment, stepWeight, workSteps } from './work-layer';
 
 const CAREER: ChapterId[] = [
   'first-code',
@@ -109,6 +109,11 @@ describe('work layer steps', () => {
     }
   });
 
+  it('frames Ciklum’s companies only once the drive out of the war has arrived', () => {
+    expect(chapterMoment('ciklum', 0)).toBeGreaterThanOrEqual(0.5);
+    expect(chapterMoment('ciklum', 1)).toBeLessThan(0.7);
+  });
+
   it("turns the sign's slats together, left to right, landing on whole faces", () => {
     for (let s = 0; s < SLATS; s++) {
       expect(slatTurn(0, s)).toBe(0);
@@ -166,7 +171,7 @@ describe('work layer in the scene', () => {
         return out.map((v) => v.toFixed(4));
       };
       for (let k = 0; k < n; k++) {
-        const local = stepMoment(k, n);
+        const local = chapterMoment(id, k);
         const forward = pose(local);
         pose(1.5);
         pose(-0.5);
