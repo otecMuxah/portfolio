@@ -249,7 +249,7 @@ export class SceneEngine {
       this.route.pose(drive, this.carAt, this.tangent);
       const chase = chaseAt(drive);
       if (chase > 0) {
-        chaseCamera(this.carAt, this.tangent, this.chase, this.chaseLook);
+        chaseCamera(this.carAt, this.tangent, this.chase, this.chaseLook, this.camera.aspect);
         fallIn(this.carAt, this.camera.position, this.look, this.chase, this.chaseLook, chase);
       }
     }

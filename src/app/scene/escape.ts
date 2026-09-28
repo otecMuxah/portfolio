@@ -73,11 +73,30 @@ const LOOK_LEFT = 2.2;
 const UP = new THREE.Vector3(0, 1, 0);
 const side = new THREE.Vector3();
 
-/** The chase camera for a car at `position` heading along `direction`: behind, above and a little to its right. */
-export function chaseCamera(position: THREE.Vector3, direction: THREE.Vector3, camera: THREE.Vector3, look: THREE.Vector3): void {
+/**
+ * On a tall screen the card covers the lower half, so the camera rides further back and higher and looks down short
+ * of the car, which lifts it and the road ahead, signs and all, into the upper half of the frame.
+ */
+const TALL_BACK = 22;
+const TALL_UP = 7.5;
+const LOOK_SHORT = -6;
+
+/**
+ * The chase camera for a car at `position` heading along `direction`: behind, above and a little to its right.
+ * `aspect` is the screen's width over height.
+ */
+export function chaseCamera(position: THREE.Vector3, direction: THREE.Vector3, camera: THREE.Vector3, look: THREE.Vector3, aspect = 16 / 9): void {
   side.crossVectors(direction, UP).normalize();
-  camera.copy(position).addScaledVector(direction, -CHASE_BACK).setY(position.y + CHASE_UP);
-  look.copy(position).addScaledVector(direction, LOOK_AHEAD).addScaledVector(side, -LOOK_LEFT).setY(position.y + 1.2);
+  const tall = Math.min(Math.max((1 - aspect) / 0.5, 0), 1);
+  camera
+    .copy(position)
+    .addScaledVector(direction, -THREE.MathUtils.lerp(CHASE_BACK, TALL_BACK, tall))
+    .setY(position.y + THREE.MathUtils.lerp(CHASE_UP, TALL_UP, tall));
+  look
+    .copy(position)
+    .addScaledVector(direction, THREE.MathUtils.lerp(LOOK_AHEAD, LOOK_SHORT, tall))
+    .addScaledVector(side, -LOOK_LEFT * (1 - tall))
+    .setY(position.y + 1.2 * (1 - tall));
 }
 
 const from = new THREE.Vector3();
