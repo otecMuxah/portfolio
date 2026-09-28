@@ -104,16 +104,6 @@ export const EN: Record<ChapterId, ChapterText> = {
     place: 'Kharkiv',
     title: 'Back to Kharkiv',
     body: 'Early 2022: home again in Kharkiv, in the world he had built.',
-    roles: [
-      {
-        company: 'Corporate Finance Institute',
-        role: 'Lead Frontend Developer',
-        years: '2020 – 2022',
-        highlights: [
-          "Created CFI's cross-platform mobile app from its first commit and shipped it to both stores single-handed.",
-        ],
-      },
-    ],
   },
   war: {
     label: 'War',

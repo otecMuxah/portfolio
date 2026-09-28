@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { PALETTE } from '../art/palette';
-import { enter, glow, leave, lowPoly, seeded, smoothstep } from '../art/kit';
+import { enter, glow, halo, leave, lowPoly, seeded, smoothstep } from '../art/kit';
 import { ChapterBuilder } from '../chapter-scene';
 
 const FACE_ROAD = 0.4;
@@ -92,9 +91,10 @@ export const firstCode: ChapterBuilder = () => {
   const tags = glyphs(tagMaterial);
   object.add(...tags);
 
-  const light = new THREE.PointLight(PALETTE.terminal, 0, 16);
-  light.position.set(0, SCREEN.y - 0.6, SCREEN.z + 2.4);
-  object.add(light);
+  // The screen's spill is an additive halo, not a PointLight: no per-fragment cost across the world.
+  const spill = halo('terminal', 9, 0);
+  spill.position.set(0, SCREEN.y, SCREEN.z + 0.3);
+  object.add(spill);
 
   const start = new THREE.Vector3(0, SCREEN.y, SCREEN.z);
   const orbit = new THREE.Vector3();
@@ -126,9 +126,8 @@ export const firstCode: ChapterBuilder = () => {
       const brightness = built * (1 - 0.55 * calm);
       code.emissiveIntensity = 1.4 * brightness;
       tagMaterial.emissiveIntensity = 1.8 * brightness;
-      light.intensity = 22 * brightness * (1 + 0.04 * Math.sin(time * 9));
-      // A point light costs every lit fragment in the world, so it is only on while the desk can be seen.
-      light.visible = built > 0 && local < 3;
+      spill.material.opacity = 0.45 * brightness * (1 + 0.05 * Math.sin(time * 9));
+      spill.visible = brightness > 0;
 
       // Idle orbit: the phase accumulates so slowing it after leave never jumps the tags.
       spin += (time - lastTime) * 0.35 * (1 - 0.7 * calm);
