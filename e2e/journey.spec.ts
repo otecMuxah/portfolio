@@ -11,12 +11,12 @@ test('scrolling walks the visitor through each chapter in order', async ({ page 
 
   await scrollToChapter(page, 'first-code');
   await expect(page.locator('.card__title')).toHaveText('Self-taught, first job');
-  // Mid first-code the scrolled year is past 2013, so the F30 has arrived.
-  await expect(page.locator(root)).toHaveAttribute('data-car', 'f30');
+  // First-code runs 2012–2015; the F30 only arrives in 2016.
+  await expect(page.locator(root)).toHaveAttribute('data-car', 'forester');
 
   await scrollToChapter(page, 'iata');
   await expect(page.locator('.card__title')).toHaveText('IATA');
-  await expect(page.locator('.card__meta')).toHaveText('2024 – now · Frankfurt');
+  await expect(page.locator('.card__meta')).toHaveText('2024 – now · Aschaffenburg, then Frankfurt');
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'rebuild');
 
   await scrollJourney(page, 1);

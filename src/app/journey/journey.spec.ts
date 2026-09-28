@@ -63,7 +63,7 @@ describe('journeyAt', () => {
       family: 'mazda3',
       rally: 'forester',
       'first-code': 'forester',
-      'kharkiv-career': 'f30',
+      'kharkiv-career': 'forester',
       ciklum: 'f30',
       iata: 'f30',
     });
@@ -83,7 +83,8 @@ describe('the car carrying the camera', () => {
     [2006, 'mazda3'],
     [2008, 'forester'],
     [2012, 'forester'],
-    [2013, 'f30'],
+    [2015, 'forester'],
+    [2016, 'f30'],
     [2024, 'f30'],
   ])('in %i is %s', (year, carId) => {
     expect(carFor(year)?.id ?? null).toBe(carId);
@@ -114,8 +115,9 @@ describe('the car carrying the camera', () => {
     expect(journeyAt(at('family', 0.99)).carId).toBe('mazda3');
     expect(journeyAt(at('rally', 0)).carId).toBe('forester');
     expect(journeyAt(at('rally', 0.99)).carId).toBe('forester');
-    expect(journeyAt(at('first-code', 0.32)).carId).toBe('forester');
-    expect(journeyAt(at('first-code', 0.34)).carId).toBe('f30');
+    expect(journeyAt(at('first-code', 0.99)).carId).toBe('forester');
+    expect(journeyAt(at('kharkiv-career', 0.16)).carId).toBe('forester');
+    expect(journeyAt(at('kharkiv-career', 0.18)).carId).toBe('f30');
   });
 
   it('meets every car once, in ownership order, and reverses exactly when scrolling back', () => {

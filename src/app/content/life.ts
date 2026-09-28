@@ -106,5 +106,5 @@ export const CARS: Car[] = [
   { id: 'mazda323f', name: 'Mazda 323F (BA)', colour: 'red', fromYear: 2004 },
   { id: 'mazda3', name: 'Mazda 3', colour: 'blue', fromYear: 2006 },
   { id: 'forester', name: 'Subaru Forester SH', colour: 'green', fromYear: 2008 },
-  { id: 'f30', name: 'BMW 320d F30', colour: 'black', fromYear: 2013 },
+  { id: 'f30', name: 'BMW 320d F30', colour: 'black', fromYear: 2016 },
 ];
