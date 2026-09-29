@@ -13,6 +13,7 @@ import { RiderRig } from './rider-rig';
 import { Road } from './road';
 import { PHONE_MAX_EDGE, Shatter, shakeAt } from './shatter';
 import { withWorkLayer } from './work/work-layer';
+import { World } from './world';
 
 const LOOK_OFFSET = new THREE.Vector3(0, 3, 0);
 /**
@@ -64,6 +65,8 @@ export class SceneEngine {
   private readonly chaseLook = new THREE.Vector3();
   /** The road and pavement under the whole journey, joining the escape road at Ciklum. */
   private readonly road: Road;
+  /** The sky, the ground, the distance and the roadside (#71). */
+  private readonly world: World;
   private shatter?: Shatter;
   private target = 0;
   private disposed = false;
@@ -110,6 +113,9 @@ export class SceneEngine {
     this.road = new Road(this.path, this.stops, spans, this.route?.length);
     gradeAll(this.road.object);
     this.scene.add(this.road.object);
+    this.world = new World(this.path, spans, this.phone);
+    gradeAll(this.world.object);
+    this.scene.add(this.world.object);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -327,10 +333,11 @@ export class SceneEngine {
     this.camera.position.add(this.shake);
     this.camera.lookAt(this.look.add(this.shake));
     this.camera.rotateZ(roll);
+    let whole = true;
     if (this.shatter) {
       // Once the war starts the world built before it, and the car, exist only as shards; after it, not at all. The
       // car comes back late in the war, driving out of the last light.
-      const whole = this.shatter.update(war) <= 0;
+      whole = this.shatter.update(war) <= 0;
       for (let i = 0; i < this.spans.length; i++) {
         const built = this.chapterScenes[i];
         if (built && this.spans[i].chapter.phase === 'build') built.object.visible = whole;
@@ -345,8 +352,10 @@ export class SceneEngine {
     GRADE_UNIFORMS.uGradeSaturation.value = this.grade.saturation;
     GRADE_UNIFORMS.uGradeExposure.value = this.grade.exposure;
     // The rebuild opens the night into a dawn sky; the fog takes its colour so distance fades into it.
-    this.sky.lerpColors(NIGHT, DAWN_SKY, dawnAt(this.current));
+    const dawn = dawnAt(this.current);
+    this.sky.lerpColors(NIGHT, DAWN_SKY, dawn);
     (this.scene.fog as THREE.Fog).color.copy(this.sky);
+    this.world.update(this.current, this.camera.position, dawn, this.sky, whole);
     gradeColor(this.sky, this.grade, this.scene.background as THREE.Color);
     this.renderer.render(this.scene, this.camera);
   }

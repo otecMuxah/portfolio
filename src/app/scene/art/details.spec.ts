@@ -4,7 +4,9 @@ import {
   asDetail,
   balcony,
   bench,
+  bollard,
   box,
+  busShelter,
   bush,
   canopy,
   chimney,
@@ -15,11 +17,13 @@ import {
   gable,
   gabledRoof,
   groundTile,
+  litterBin,
   merge,
   paintedMaterial,
   paneSlots,
   parapet,
   pilasters,
+  poplar,
   rock,
   row,
   steps,
@@ -57,6 +61,12 @@ describe('detail kit', () => {
       tree('birch', 1),
       bush(1),
       rock(1),
+      poplar(1),
+      litterBin(),
+      litterBin({ style: 'post' }),
+      bollard(),
+      busShelter(),
+      busShelter(3, { style: 'glass' }),
     ];
     for (const g of parts) {
       expect(g.index).toBeNull();
@@ -163,6 +173,9 @@ describe('detail kit', () => {
     expect(positions(bush(2))).toEqual(positions(bush(2)));
     expect(positions(rock(2))).toEqual(positions(rock(2)));
     expect(positions(rock(2))).not.toEqual(positions(rock(3)));
+    expect(positions(poplar(2))).toEqual(positions(poplar(2)));
+    expect(positions(poplar(2))).not.toEqual(positions(poplar(3)));
+    expect(triangles(poplar(2, { low: true }))).toBeLessThan(triangles(poplar(2)));
   });
 
   it('is cheaper as rails than as bars, and leaves a gap for a gate', () => {
