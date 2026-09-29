@@ -52,7 +52,7 @@ test.describe('on a phone', () => {
 
     const { shatter } = await sceneInfo(page);
     writeFileSync(`${EVIDENCE}/phone-budget.json`, JSON.stringify({ ratio, shatter, frames }, null, 2));
-    // The coarser shatter (shatter.ts): about 18.5k triangles against 45k on a desktop.
+    // The coarser shatter (shatter.ts): about 18.7k triangles against 45.2k on a desktop.
     expect(shatter!.triangles).toBeLessThanOrEqual(20_000);
     // The birth cloud and the rally dust, drawn from every chapter, at half: 600 of 1200 each.
     expect(frames['birth'].points).toBeLessThanOrEqual(1_200);
