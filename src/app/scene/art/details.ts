@@ -620,7 +620,7 @@ export function bench(length = 1.6, { tint = 'terracotta' as Tint, legTint = 'as
 // Growing things and stones. Seeded: the seed picks the size, lean, crown and a small shift in colour.
 
 /** A colour a little off `tint`, per seed: no two trees of a row are the same green. */
-function vary(tint: Tint, random: () => number, amount = 0.1): THREE.Color {
+export function vary(tint: Tint, random: () => number, amount = 0.1): THREE.Color {
   const c = colourOf(tint, new THREE.Color());
   const hsl = { h: 0, s: 0, l: 0 };
   c.getHSL(hsl);
@@ -628,7 +628,7 @@ function vary(tint: Tint, random: () => number, amount = 0.1): THREE.Color {
 }
 
 /** A low-poly lump: an icosahedron squashed to `sx` × `sy` × `sz`, its vertices nudged per seed. */
-function lump(sx: number, sy: number, sz: number, random: () => number, tint: THREE.Color, jitter = 0.18, detail = 0): THREE.BufferGeometry {
+export function lump(sx: number, sy: number, sz: number, random: () => number, tint: THREE.Color, jitter = 0.18, detail = 0): THREE.BufferGeometry {
   const g = new THREE.IcosahedronGeometry(1, detail);
   // Non-indexed: the same corner appears once per face. Nudge by position, so shared corners move together.
   const pos = g.getAttribute('position');
