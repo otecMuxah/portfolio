@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { PALETTE } from '../art/palette';
+import { box, detailMesh, merge, place as put, shade, tree } from '../art/details';
 import { enter, glow, haloMap, leave, lowPoly, mergedMesh, seeded, smoothstep } from '../art/kit';
+import { figure, rod, scotsPine } from '../art/props';
+import { bakeAO, contactShadows } from '../art/shading';
 import { ChapterBuilder, chapterAnchor } from '../chapter-scene';
 
 /** Where the engine's car rides at the chapter midpoint: the anchor plus CAR_OFFSET (scene-engine.ts). */
@@ -25,7 +28,7 @@ export function stageAlong(index: number): [from: number, to: number] {
 
 /**
  * A gravel stage in autumn forest: the stage road under the car's lane, a berm, spectator tape,
- * a chevron board with hay bales at the corner, and the dust the passing Forester kicks up.
+ * a chevron board with hay bales at the corner, spectators and a marshal post, and the dust the passing Forester kicks up.
  * The Forester itself is the engine's car rig; the dust follows it from scroll alone.
  */
 export const rally: ChapterBuilder = (_chapter, index, phone = false) => {
@@ -120,52 +123,73 @@ export const rally: ChapterBuilder = (_chapter, index, phone = false) => {
   corner.add(mergedMesh(bales, lowPoly('wheat')));
   object.add(corner);
 
-  // Autumn forest behind: dark pines among gold and red birches.
-  const pines: THREE.BufferGeometry[] = [];
-  const trunks: THREE.BufferGeometry[] = [];
-  const birches: THREE.BufferGeometry[] = [];
-  const gold: THREE.BufferGeometry[] = [];
-  const rust: THREE.BufferGeometry[] = [];
-  let planted = 0;
+  // Autumn forest behind (#74), the region's own: Scots pine and oak, and birch on the damp ground nearest the ditch.
+  // Seeded on its own, so the dust after it keeps its layout.
+  const grove = seeded(74);
+  const stands: { p: THREE.Vector3; off: number }[] = [];
   const middle = new THREE.Vector3();
-  for (let tries = 0; planted < 16 && tries < 400; tries++) {
-    const along = -13 + random() * 24;
-    const off = TAPE_OFF + 4 + random() * 14;
-    if (!inPlot(along, off, 2)) continue;
+  for (let tries = 0; stands.length < (phone ? 14 : 22) && tries < 600; tries++) {
+    const along = -13 + grove() * 24;
+    const off = TAPE_OFF + 4 + grove() * 14;
+    // Room for the widest crown inside the plot.
+    if (!inPlot(along, off, 3)) continue;
     if (Math.abs(along + 1) < 3.5 && off < TAPE_OFF + 6) continue; // leave the board in view
     const p = at(along, off);
-    const tall = 5 + random() * 6;
-    if (random() < 0.5) {
-      trunks.push(place(new THREE.CylinderGeometry(0.15, 0.25, tall * 0.3, 5), p.x, tall * 0.15, p.z));
-      for (let tier = 0; tier < 3; tier++) {
-        const r = (1.9 - tier * 0.45) * (tall / 8);
-        pines.push(place(new THREE.ConeGeometry(r, tall * 0.4, 6), p.x, tall * (0.35 + tier * 0.2), p.z, random()));
-      }
-    } else {
-      birches.push(place(new THREE.CylinderGeometry(0.12, 0.18, tall * 0.7, 5), p.x, tall * 0.35, p.z));
-      const leaves = random() < 0.6 ? gold : rust;
-      const r = 1 + random() * 0.8;
-      leaves.push(place(new THREE.IcosahedronGeometry(r, 0), p.x, tall * 0.7, p.z, random() * 3, [1, 1.3, 1]));
-      leaves.push(place(new THREE.IcosahedronGeometry(r * 0.7, 0), p.x + 0.4, tall * 0.7 + r, p.z, random() * 3));
-    }
+    stands.push({ p, off });
     middle.add(p);
-    planted++;
   }
   // Pivot the forest on its middle, so it spreads out from there as it builds.
   const forest = new THREE.Group();
-  forest.position.copy(middle.divideScalar(planted));
-  for (const [parts, key] of [
-    [pines, 'krakowRoof'],
-    [trunks, 'brass'],
-    [birches, 'chalk'],
-    [gold, 'dawnGold'],
-    [rust, 'brick'],
-  ] as const) {
-    const mesh = mergedMesh(parts, lowPoly(key));
-    mesh.geometry.translate(-forest.position.x, 0, -forest.position.z);
-    forest.add(mesh);
-  }
+  forest.position.copy(middle.divideScalar(stands.length));
+  const woods = stands.map(({ p, off }, i) => {
+    const kind = grove();
+    const trunk =
+      off < TAPE_OFF + 7.5 && kind < 0.6
+        ? tree('birch', 800 + i, { height: 5.5, low: phone, foliage: 'dawnGold' })
+        : kind < 0.55
+          ? scotsPine(800 + i, { height: 10, low: phone, foliage: shade('krakowRoof', 0.75) })
+          : tree('broadleaf', 800 + i, { height: 5.5, low: phone, foliage: kind < 0.8 ? shade('brass', 0.7) : shade('beech', 0.65) });
+    return put(trunk, p.x - forest.position.x, 0, p.z - forest.position.z, grove() * Math.PI * 2);
+  });
+  forest.add(
+    detailMesh(bakeAO(merge(woods), { corner: 0, fade: 2 })),
+    contactShadows(
+      stands.map(({ p }) => ({ x: p.x - forest.position.x, z: p.z - forest.position.z, w: 2.6, d: 2.6 })),
+      { opacity: 0.4 },
+    ),
+  );
   object.add(floor, forest);
+
+  // Spectators behind the tape either side of the board, in a zone taped off at its ends; along the stage, a marshal
+  // post: a marshal in an orange tabard with a yellow flag, and the blue board of a radio point (FIA rally safety
+  // guidelines; the look of a Ukrainian stage of the time is not documented, so this is the generic one).
+  const crowdParts: THREE.BufferGeometry[] = [];
+  const ZONE = TAPE_OFF + 2.4;
+  const watchers = (phone ? [-4.6, 2.6, 3.6] : [-5.8, -4.9, -4.1, 2.2, 3.1, 3.9, 4.6]).filter((along) => inPlot(along, ZONE, 1));
+  watchers.forEach((along, i) => {
+    const off = TAPE_OFF + 0.8 + ((i * 0.37) % 1) * 1.1;
+    crowdParts.push(put(figure(74 + i, { low: phone }), along, 0, -off, (i % 3) * 0.25 - 0.25));
+  });
+  for (const along of watchers.length ? [watchers[0] - 0.8, watchers[watchers.length - 1] + 0.8] : []) {
+    crowdParts.push(put(box(0.1, 1.1, 0.1, 'soot'), along, 0, -ZONE));
+    crowdParts.push(put(box(0.02, 0.1, 1.2, 'brick'), along, 0.9, -TAPE_OFF - 0.6), put(box(0.02, 0.1, 1.2, 'chalk'), along, 0.9, -TAPE_OFF - 1.8));
+  }
+  const post = [6.5, 5.5, 7.5, -8].find((along) => inPlot(along, TAPE_OFF + 1.6, 1.5));
+  if (post !== undefined) {
+    const off = TAPE_OFF + 1.2;
+    const hand = new THREE.Vector3(post + 0.3, 1, -off + 0.05);
+    const top = new THREE.Vector3(post + 0.4, 2.1, -off + 0.15);
+    crowdParts.push(
+      put(figure(7, { coat: 'slate', tabard: 'homeWarm', low: phone }), post, 0, -off, -0.4),
+      rod(hand, top, 0.04, 'soot'),
+      put(box(0.6, 0.4, 0.02, 'signGold'), top.x + 0.3, top.y - 0.4, top.z),
+      put(box(0.08, 1.9, 0.08, 'ash'), post - 1.1, 0, -off - 0.4),
+      put(box(0.7, 0.7, 0.04, 'signBlue'), post - 1.1, 1.5, -off - 0.35),
+    );
+  }
+  const crowd = new THREE.Group();
+  crowd.add(detailMesh(bakeAO(merge(crowdParts), { corner: 0, fade: 1 })));
+  lane.add(crowd);
 
   // Dust: faceted puffs rolling off the rear wheels, grit sprayed from the tyres, and haze in the air.
   // Each puff and grain is laid at a point on the stage; it rises once the car has passed that point.
@@ -222,6 +246,7 @@ export const rally: ChapterBuilder = (_chapter, index, phone = false) => {
     { part: bermMesh, from: 0.25, spread: false },
     { part: tape, from: 0.35, spread: false },
     { part: corner, from: 0.45, spread: false },
+    { part: crowd, from: 0.5, spread: false },
   ];
 
   const matrix = new THREE.Matrix4();
