@@ -9,6 +9,7 @@ import {
   canopy,
   chimney,
   cornice,
+  curtainWall,
   detailMesh,
   door,
   fence,
@@ -48,6 +49,7 @@ describe('detail kit', () => {
       chimney(0.5, 1, 0.5),
       gabledRoof(4, 1.5, 3),
       tower(1, 4, { roof: 'dome', band: 3 }),
+      curtainWall([[-1, -1], [1, -1], [1, 1], [-1, 1]], 3),
       groundTile(5, 4),
       fence([[0, 0], [5, 0], [5, 5]], { gates: [{ at: 2.5, width: 1.2 }] }),
       streetLamp().body,
@@ -171,6 +173,25 @@ describe('detail kit', () => {
     const shut = fence(path, { style: 'bars' });
     const gated = fence(path, { style: 'bars', gates: [{ at: 5, width: 2 }] });
     expect(triangles(gated)).not.toBe(triangles(shut));
+  });
+
+  it('stands a curtain wall proud of every side of its plan, whichever way the plan winds', () => {
+    const square: [number, number][] = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+    for (const plan of [square, [...square].reverse()]) {
+      const g = curtainWall(plan, 3, { perSide: 2, bands: 2, depth: 0.05 });
+      g.computeBoundingBox();
+      const { min, max } = g.boundingBox!;
+      // Every bar outside the walls (|x|, |z| up to 1), none inside, and from the ground to the top.
+      expect(max.x).toBeCloseTo(1.05, 2);
+      expect(min.z).toBeCloseTo(-1.05, 2);
+      expect(min.y).toBeCloseTo(0, 5);
+      expect(max.y).toBeCloseTo(3, 5);
+      const pos = g.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) expect(Math.max(Math.abs(pos.getX(i)), Math.abs(pos.getZ(i)))).toBeGreaterThan(0.999 - 0.04);
+    }
+    // More mullions and bands cost more; flat strips cost less than bars.
+    expect(triangles(curtainWall(square, 3, { perSide: 1, bands: 1 }))).toBeLessThan(triangles(curtainWall(square, 3, { perSide: 3, bands: 2 })));
+    expect(triangles(curtainWall(square, 3, { flat: true }))).toBeLessThan(triangles(curtainWall(square, 3)));
   });
 
   it('tags detail meshes for the shatter to leave out', () => {
