@@ -766,3 +766,68 @@ export function rock(seed: number, size = 0.6, tint: Tint = 'gravel'): THREE.Buf
   const r = size / 2;
   return merge([place(lump(r, r * (0.5 + random() * 0.3), r * (0.8 + random() * 0.3), random, vary(tint, random, 0.15), 0.28), 0, r * 0.25, 0)]);
 }
+
+/** A Lombardy poplar about `height` tall, seeded: a slim trunk under one tall, narrow crown (the Soviet street tree). */
+export function poplar(seed: number, { height = 6, low = false, foliage = 'beech' as Tint } = {}): THREE.BufferGeometry {
+  const random = seeded(seed);
+  const h = height * (0.85 + random() * 0.3);
+  const r = h * 0.12 * (0.9 + random() * 0.2);
+  const green = vary(foliage, random).multiplyScalar(0.9);
+  return merge([
+    paint(new THREE.CylinderGeometry(0.07, 0.12, h * 0.3, 5).translate(0, h * 0.15, 0), 'soot', 1.5),
+    place(lump(r, h * 0.4, r, random, green, 0.12, low ? 0 : 1), 0, h * 0.58, 0),
+  ]);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Roadside furniture (#71).
+
+/**
+ * A litter bin: 'urn', the Soviet cast-concrete bowl on a foot; 'post', a steel bin hung on a post (Polish and German
+ * streets).
+ */
+export function litterBin({ style = 'urn' as 'urn' | 'post', tint = undefined as Tint | undefined } = {}): THREE.BufferGeometry {
+  if (style === 'urn') {
+    const t = tint ?? 'concrete';
+    return merge([box(0.24, 0.18, 0.24, t, 0.9), paint(new THREE.CylinderGeometry(0.3, 0.18, 0.5, 6).translate(0, 0.43, 0), t)]);
+  }
+  const t = tint ?? 'ash';
+  return merge([
+    box(0.06, 1, 0.06, 'ash'),
+    paint(new THREE.CylinderGeometry(0.2, 0.18, 0.5, 6).translate(0, 0.65, 0.2), t),
+    place(box(0.44, 0.04, 0.44, t, 0.8), 0, 0.9, 0.2),
+  ]);
+}
+
+/** A kerb post `height` tall: square, under a cap a shade lighter. */
+export function bollard(height = 0.6, tint: Tint = 'concrete'): THREE.BufferGeometry {
+  return merge([box(0.16, height, 0.16, tint), place(box(0.2, 0.05, 0.2, tint, 1.12), 0, height, 0)]);
+}
+
+/**
+ * A bus shelter `width` wide, open to +z, a bench inside: 'concrete', the Soviet pavilion of cast walls under a thick
+ * slab; 'glass', the European one of steel posts and glass panes.
+ */
+export function busShelter(width = 3, { style = 'concrete' as 'concrete' | 'glass', tint = undefined as Tint | undefined } = {}): THREE.BufferGeometry {
+  const h = 2.3;
+  const d = 1.3;
+  const parts = [place(bench(width - 0.6, { tint: style === 'concrete' ? 'terracotta' : 'steel', back: false }), 0, 0, -d / 2 + 0.35)];
+  if (style === 'concrete') {
+    const t = tint ?? 'concrete';
+    parts.push(
+      place(box(width, h, 0.14, t), 0, 0, -d / 2),
+      place(box(0.14, h, d, t, 0.92), -width / 2 + 0.07, 0, 0),
+      place(box(0.14, h, d, t, 0.92), width / 2 - 0.07, 0, 0),
+      place(box(width + 0.4, 0.22, d + 0.5, t, 1.08), 0, h, 0.15),
+    );
+  } else {
+    const t = tint ?? 'ash';
+    for (const x of [-width / 2, width / 2]) for (const z of [-d / 2, d / 2]) parts.push(place(box(0.07, h, 0.07, t), x, 0, z));
+    parts.push(
+      place(paint(new THREE.PlaneGeometry(width, h - 0.3).translate(0, (h - 0.3) / 2 + 0.2, 0), 'glass', 0.7), 0, 0, -d / 2 + 0.02),
+      place(paint(new THREE.PlaneGeometry(d, h - 0.3).rotateY(Math.PI / 2).translate(0, (h - 0.3) / 2 + 0.2, 0), 'glass', 0.6), -width / 2 + 0.02, 0, 0),
+      place(box(width + 0.2, 0.08, d + 0.3, t, 1.2), 0, h, 0.1),
+    );
+  }
+  return merge(parts);
+}
