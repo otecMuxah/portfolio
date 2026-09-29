@@ -1,10 +1,16 @@
 import * as THREE from 'three';
 import { CHAPTERS, CHAPTER_TEXT, ChapterId, Domain } from '../../content/life';
 import { ROLES } from '../../content/cv';
-import { build, built, stubCanvas } from '../chapters/scene-contract';
+import { chapterSpans } from '../../journey/journey';
+import { chapterAnchor } from '../chapter-scene';
+import { build, built, solids, stubCanvas, vertices } from '../chapters/scene-contract';
+import { LIGHT } from '../chapters/war';
+import { BENDS, DRIVE, EscapeRoute } from '../escape';
+import { CAMERA_OFFSET, cameraPath, carFrom, pathT, roadStops } from '../path';
+import { Road } from '../road';
 import { SLATS, slatTurn } from './nameplate';
 import { badgeScale, ringRadius, RING_MAX_RADIUS, RING_MIN_RADIUS } from './tech-ring';
-import { chapterMoment, stepAt, stepMoment, stepWeight, workSteps } from './work-layer';
+import { behindScene, chapterMoment, stepAt, stepMoment, stepWeight, workSteps } from './work-layer';
 
 const CAREER: ChapterId[] = [
   'first-code',
@@ -191,5 +197,163 @@ describe('work layer in the scene', () => {
         expect(pose(local), `${id} step ${k}`).toEqual(forward);
       }
     }
+  });
+
+  /** The work layer's own plot: it stands behind the chapter's 12 m one, so it gets a wider radius. */
+  const WORK_PLOT = 20;
+  const LOCALS = [-0.5, 0, 0.5, 1, 2];
+  const layerVertices = (id: ChapterId, local: number) => vertices(layer(built(id, local))!);
+
+  it('turns camera terms into the anchor frame: behind is away from the camera road, across is to screen right', () => {
+    const back = behindScene(10, 0, 3);
+    expect(back.y).toBe(3);
+    expect(back.clone().setY(0).normalize().dot(CAMERA_OFFSET.clone().setY(0).normalize())).toBeCloseTo(-1, 6);
+    const right = behindScene(0, 1, 0);
+    expect(right.dot(CAMERA_OFFSET.clone().setY(0))).toBeCloseTo(0, 6);
+    // Screen right of a camera looking along -(18, 16): +x, -z.
+    expect(right.x).toBeGreaterThan(0);
+    expect(right.z).toBeLessThan(0);
+  });
+
+  it(`stands behind the set piece from the chapter camera, past its 12 m plot and inside a ${WORK_PLOT} m one, under 22 m`, () => {
+    const away = CAMERA_OFFSET.clone().setY(0).normalize().negate();
+    for (const id of CAREER)
+      for (const local of LOCALS)
+        for (const v of layerVertices(id, local)) {
+          const flat = Math.hypot(v.x, v.z);
+          expect(flat, `${id} at ${local}`).toBeLessThanOrEqual(WORK_PLOT);
+          expect(flat, `${id} at ${local}`).toBeGreaterThan(12);
+          expect(v.clone().setY(0).dot(away), `${id} behind at ${local}`).toBeGreaterThan(6);
+          expect(v.y, `${id} at ${local}`).toBeLessThanOrEqual(22);
+        }
+  });
+
+  it("keeps clear of the road, the pavement, the escape road and the neighbouring chapters' plots", () => {
+    const spans = chapterSpans();
+    const anchors = spans.map((_, i) => chapterAnchor(i));
+    const stops = roadStops(spans);
+    const path = cameraPath(anchors);
+    // The escape road as the engine lays it (scene-engine.ts escapeRoute).
+    const war = spans.find((s) => s.chapter.id === 'war')!;
+    const t = pathT(stops, spans.length, DRIVE.to);
+    const end = carFrom(path.getPoint(t), new THREE.Vector3());
+    const escape = new EscapeRoute(
+      [
+        anchors[war.index].clone().add(LIGHT).setY(0),
+        ...BENDS.map(([x, z]) => new THREE.Vector3(anchors[war.index].x + x, 0, anchors[war.index].z + z)),
+        end.clone().addScaledVector(path.getTangent(t).setY(0).normalize(), -10),
+        end,
+      ],
+      anchors[war.index].clone().add(LIGHT),
+    );
+    const road = new Road(path, stops, spans, escape.length);
+    road.object.updateMatrixWorld(true);
+    escape.object.updateMatrixWorld(true);
+    // Paving vertices lie at most ~2 m from any point of their surface, so 4 m from every one keeps 2 m clear.
+    const town = vertices(road.object);
+    const out = vertices(escape.object.children[0]);
+    for (const id of CAREER) {
+      const index = CHAPTERS.findIndex((c) => c.id === id);
+      // The escape road only shows once the world built before the war has broken (escape.ts, scene-engine.ts).
+      const paving = CHAPTERS[index].phase === 'build' ? town : [...town, ...out];
+      const near = paving.filter((p) => Math.hypot(p.x - anchors[index].x, p.z - anchors[index].z) < WORK_PLOT + 6);
+      for (const local of LOCALS) {
+        let toRoad = Infinity;
+        let toNeighbour = Infinity;
+        for (const v of layerVertices(id, local)) {
+          const at = v.add(anchors[index]);
+          for (const p of near) toRoad = Math.min(toRoad, Math.hypot(at.x - p.x, at.z - p.z));
+          anchors.forEach((a, j) => {
+            if (j !== index) toNeighbour = Math.min(toNeighbour, Math.hypot(at.x - a.x, at.z - a.z));
+          });
+        }
+        expect(toRoad, `${id} road at ${local}`).toBeGreaterThan(4);
+        expect(toNeighbour, `${id} neighbours at ${local}`).toBeGreaterThan(12);
+      }
+    }
+  });
+
+  it('never meets its set piece, moving parts and all (the IATA planes included), however far the scroll', () => {
+    const inside = new THREE.Vector3();
+    for (const id of CAREER) {
+      const scene = build(id);
+      const work = layer(scene.object)!;
+      const [sign, ring] = work.children;
+      const plates: THREE.Mesh[] = [];
+      sign.traverse((o) => o instanceof THREE.Mesh && plates.push(o));
+      // The whole scroll, and closer through the fold-away (FOLD).
+      for (const local of [...new Set([...steps(-0.5, 2, 40), ...steps(1, 1.3, 6)])]) {
+        scene.update?.({ progress: 0, local, time: 3 + local * 10 });
+        scene.object.updateMatrixWorld(true);
+        work.visible = false;
+        const set = vertices(scene.object);
+        work.visible = true;
+        const at = `${id} at ${local.toFixed(3)}`;
+        // The sign's parts in their own frame, so a sign turned to the road is not judged by its axis-aligned box;
+        // only the set's vertices inside that box's world bounds can be in it.
+        for (const mesh of plates) {
+          mesh.geometry.computeBoundingBox();
+          const box = mesh.geometry.boundingBox!;
+          const bounds = box.clone().applyMatrix4(mesh.matrixWorld);
+          const toLocal = mesh.matrixWorld.clone().invert();
+          const hit = set.find((v) => bounds.containsPoint(v) && box.containsPoint(inside.copy(v).applyMatrix4(toLocal)));
+          expect(hit, at).toBeUndefined();
+        }
+        // The ring leans and turns, and its badges are small: a metre clear of every one of its vertices; only the
+        // set's vertices within a metre of the ring's bounds can come that close.
+        const hoop = vertices(ring);
+        const reach = new THREE.Box3().setFromPoints(hoop).expandByScalar(1);
+        const near = set.filter((v) => reach.containsPoint(v));
+        expect(near.find((v) => hoop.some((h) => h.distanceTo(v) < 1)), at).toBeUndefined();
+      }
+    }
+  });
+
+  it("stays out of the near view of the camera at every other chapter and company, on desktop and on phones held either way", () => {
+    const spans = chapterSpans();
+    const anchors = spans.map((_, i) => chapterAnchor(i));
+    const stops = roadStops(spans);
+    const path = cameraPath(anchors);
+    // Where the camera stands: every chapter's midpoint and every company's moment, as scene-engine.ts poses it; each
+    // framing the chapter it stands nearest (the war's frames back home breaking).
+    const views = spans.flatMap(({ chapter, start, end }) =>
+      [0.5, ...workSteps(chapter.id).map((_, k) => chapterMoment(chapter.id, k))].map((local) => {
+        const t = pathT(stops, spans.length, start + (end - start) * local);
+        const progress = start + (end - start) * local;
+        return { index: Math.round(t * (spans.length - 1)), at: `${chapter.id} at ${local.toFixed(2)}`, camera: path.getPoint(t), progress };
+      }),
+    );
+    // Its framings on desktop and on phones held sideways and upright (scene-engine.ts).
+    const framings = (camera: THREE.Vector3) => {
+      const look = camera.clone().sub(CAMERA_OFFSET).add(new THREE.Vector3(0, 3, 0));
+      const car = carFrom(camera, new THREE.Vector3());
+      const portraitLook = look.clone().lerp(car, 0.5);
+      return [
+        { aspect: 1440 / 900, camera, look },
+        { aspect: 844 / 390, camera: camera.clone().sub(look).multiplyScalar(1.3).add(look), look: look.clone().setY(0) },
+        { aspect: 390 / 844, camera: camera.clone().sub(portraitLook).multiplyScalar(1.6).add(portraitLook), look: portraitLook },
+      ];
+    };
+    const frustum = new THREE.Frustum();
+    const close: string[] = [];
+    for (const id of CAREER) {
+      const index = CHAPTERS.findIndex((c) => c.id === id);
+      const { start, end } = spans[index];
+      for (const view of views) {
+        if (view.index === index) continue;
+        // Posed as it stands at that moment.
+        const world = layerVertices(id, (view.progress - start) / (end - start)).map((v) => v.add(anchors[index]));
+        for (const { aspect, camera, look } of framings(view.camera)) {
+          const eye = new THREE.PerspectiveCamera(55, aspect, 0.1, 500);
+          eye.position.copy(camera);
+          eye.lookAt(look);
+          eye.updateMatrixWorld();
+          frustum.setFromProjectionMatrix(eye.projectionMatrix.clone().multiply(eye.matrixWorldInverse));
+          const near = Math.min(...world.filter((v) => frustum.containsPoint(v)).map((v) => v.distanceTo(camera)));
+          if (near < 40) close.push(`${id} ${near.toFixed(1)} m from the camera at ${view.at}, ${aspect.toFixed(2)}`);
+        }
+      }
+    }
+    expect(close).toEqual([]);
   });
 });
