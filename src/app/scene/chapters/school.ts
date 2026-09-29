@@ -161,7 +161,8 @@ export const school: ChapterBuilder = (_chapter, _index, phone = false) => {
     place(lamp.body, ENTRANCE.x + 1.3, 0, 3.2, Math.PI),
     place(lamp.lamp, ENTRANCE.x + 1.3, 0, 3.2, Math.PI),
     place(tree('broadleaf', 7, { height: 4.2, low: phone }), -8.4, 0, 2.1),
-    place(tree('birch', 3, { height: 4, low: phone }), 6.4, 0, 2.3),
+    // The birch stands off the west end, where it hides no window from the road (#73: at 6.4, 2.3 it hid two bays).
+    place(tree('birch', 3, { height: 4, low: phone }), -9.2, 0, 0.2),
     // Flagpole, its flag clear of the facade.
     place(box(0.08, 4.6, 0.08, 'chalk'), -4, 0, 2.3),
     place(box(0.06, 0.12, 0.06, 'chalk', 0.8), -4, 4.6, 2.3),
@@ -188,7 +189,7 @@ export const school: ChapterBuilder = (_chapter, _index, phone = false) => {
       { x: (WEST + EAST) / 2, z: (FRONT + BACK) / 2 + 0.3, w: EAST - WEST + 1.6, d: FRONT - BACK + 2.4 },
       { x: (WING_X0 + EAST) / 2, z: (BACK + WING_BACK) / 2, w: 4.2, d: 4.2 },
       { x: -8.4, z: 2.1, w: 2.4, d: 2.4 },
-      { x: 6.4, z: 2.3, w: 1.6, d: 1.6 },
+      { x: -9.2, z: 0.2, w: 1.6, d: 1.6 },
       ...(phone ? [] : [{ x: -5.6, z: 2.6, w: 2, d: 2 }]),
     ],
     { opacity: 0.5 },

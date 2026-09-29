@@ -489,6 +489,42 @@ export function curtainWall(
   return merge(parts);
 }
 
+/** A round column `height` tall (base to capital top) of `radius`: a square base block, an 8-sided shaft and a capital slab. */
+export function column(height: number, radius = 0.1, { tint = 'chalk' as Tint, capitalTint = tint as Tint, sides = 8 } = {}): THREE.BufferGeometry {
+  const foot = radius * 0.9;
+  const head = radius * 1.1;
+  const shaft = height - foot - head;
+  return merge([
+    box(radius * 2.6, foot, radius * 2.6, tint, 0.92),
+    paint(new THREE.CylinderGeometry(radius * 0.92, radius, shaft, sides, 1, true).translate(0, foot + shaft / 2, 0), tint),
+    place(box(radius * 2.4, head * 0.45, radius * 2.4, capitalTint, 0.95), 0, height - head, 0),
+    place(box(radius * 2.9, head * 0.55, radius * 2.9, capitalTint), 0, height - head * 0.55, 0),
+  ]);
+}
+
+/**
+ * A hipped roof over a footprint w × d (centred), `height` to its ridge, overhanging by `overhang`: four slopes and
+ * a ridge along the longer side, six triangles in all.
+ */
+export function hipRoof(w: number, d: number, height: number, { tint = 'terracotta' as Tint, overhang = 0.2 } = {}): THREE.BufferGeometry {
+  const x = w / 2 + overhang;
+  const z = d / 2 + overhang;
+  const along = x >= z;
+  // The ridge ends: the slopes all rise at the same pitch, so the ridge is as long as the long side less the short.
+  const r = Math.abs(x - z);
+  const [p, q] = along ? [new THREE.Vector3(-r, height, 0), new THREE.Vector3(r, height, 0)] : [new THREE.Vector3(0, height, r), new THREE.Vector3(0, height, -r)];
+  const a = new THREE.Vector3(-x, 0, z);
+  const b = new THREE.Vector3(x, 0, z);
+  const c = new THREE.Vector3(x, 0, -z);
+  const e = new THREE.Vector3(-x, 0, -z);
+  // Counter-clockwise seen from outside.
+  const tris = along
+    ? [[a, b, q], [a, q, p], [c, e, p], [c, p, q], [b, c, q], [e, a, p]]
+    : [[a, b, p], [c, e, q], [b, c, q], [b, q, p], [e, a, p], [e, p, q]];
+  const geometry = new THREE.BufferGeometry().setFromPoints(tris.flat());
+  return paint(geometry, tint);
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Grounds and street furniture.
 
