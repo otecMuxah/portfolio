@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {
+  arcade,
   arch,
   asDetail,
   balcony,
@@ -18,6 +19,7 @@ import {
   groundTile,
   hipRoof,
   merge,
+  onion,
   paintedMaterial,
   paneSlots,
   parapet,
@@ -207,6 +209,24 @@ describe('detail kit', () => {
     const shut = fence(path, { style: 'bars' });
     const gated = fence(path, { style: 'bars', gates: [{ at: 5, width: 2 }] });
     expect(triangles(gated)).not.toBe(triangles(shut));
+  });
+
+  it('builds an arcade as wide as its wall, a bay per opening, cheaper with fewer segments', () => {
+    const three = arcade(6, 3, 1);
+    three.computeBoundingBox();
+    expect(three.boundingBox!.max.x - three.boundingBox!.min.x).toBeCloseTo(6, 1);
+    expect(three.boundingBox!.max.y).toBeGreaterThan(1);
+    expect(triangles(arcade(6, 4, 1))).toBeGreaterThan(triangles(three));
+    expect(triangles(arcade(6, 3, 1, { segments: 3 }))).toBeLessThan(triangles(three));
+  });
+
+  it('turns an onion dome on the ground, as tall as asked, cheaper with fewer sides', () => {
+    const dome = onion(1, 2.5);
+    dome.computeBoundingBox();
+    expect(dome.boundingBox!.min.y).toBeCloseTo(0);
+    expect(dome.boundingBox!.max.y).toBeCloseTo(2.5);
+    expect(dome.boundingBox!.max.x).toBeCloseTo(1, 1);
+    expect(triangles(onion(1, 2.5, { sides: 6 }))).toBeLessThan(triangles(dome));
   });
 
   it('tags detail meshes for the shatter to leave out', () => {
