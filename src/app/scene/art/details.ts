@@ -319,6 +319,40 @@ export function canopy(w: number, d: number, height: number, { tint = 'chalk' as
   return merge(parts);
 }
 
+/**
+ * An arcade on a wall `length` wide (#75): `bays` round-headed openings, dark behind, on piers standing proud, each
+ * under an arch ring; the openings' arches spring at `spring`. The wall between them (the spandrels) is the wall's own.
+ */
+export function arcade(
+  length: number,
+  bays: number,
+  spring: number,
+  { pier = 0.2, depth = 0.12, segments = 5, tint = 'chalk' as Tint, shadow = 'ground' as Tint } = {},
+): THREE.BufferGeometry {
+  const span = (length - pier * (bays + 1)) / bays;
+  const parts: THREE.BufferGeometry[] = [];
+  for (const x of row(bays, span + pier)) {
+    parts.push(place(paint(glass(span, spring, true), shadow), x, 0, 0));
+    parts.push(place(arch(span + pier * 0.5, { thickness: pier * 0.5, depth, segments, tint }), x, spring, 0));
+  }
+  for (const x of row(bays + 1, span + pier)) parts.push(place(box(pier, spring, depth, tint, 0.94), x, 0, depth / 2));
+  return merge(parts);
+}
+
+/** An onion dome of `radius` standing on y = 0, `height` to its tip, turned from a lathe profile of `sides` facets. */
+export function onion(radius: number, height = radius * 2.2, { sides = 8, tint = 'dawnGold' as Tint } = {}): THREE.BufferGeometry {
+  const profile = [
+    [0.55, 0],
+    [0.95, 0.14],
+    [1, 0.3],
+    [0.8, 0.52],
+    [0.35, 0.78],
+    [0.08, 0.92],
+    [0, 1],
+  ].map(([r, y]) => new THREE.Vector2(r * radius, y * height));
+  return paint(new THREE.LatheGeometry(profile, sides), tint);
+}
+
 export interface CorniceOptions {
   /** Stepped tiers of the profile, each standing out further. Default 2. */
   tiers?: number;
@@ -435,6 +469,57 @@ export function tower(radius: number, height: number, { sides = 8, roof = 'cone'
   } else if (roof === 'dome') {
     parts.push(paint(new THREE.SphereGeometry(radius * 1.02, sides, 3, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, roofHeight / radius, 1).translate(0, top, 0), roofTint));
   } else parts.push(place(box(radius * 2.1, 0.1, radius * 2.1, roofTint), 0, top, 0));
+  return merge(parts);
+}
+
+export interface CurtainWallOptions {
+  /** Upright mullions on each side, between its corners. Default 3. */
+  perSide?: number;
+  /** Horizontal bars (floor lines), evenly up the wall, the top edge among them. Default 1. */
+  bands?: number;
+  /** Bar width (m). Default 0.06. */
+  bar?: number;
+  /** How far the bars stand proud of the wall (m). Default 0.04. */
+  depth?: number;
+  /** A post at every corner of the plan. Default true. */
+  corners?: boolean;
+  /** Flat strips facing out rather than bars: two triangles each, for a wall only seen from outside. */
+  flat?: boolean;
+  tint?: Tint;
+}
+
+/**
+ * Curtain-wall mullions round a prism of `height` standing on y = 0 whose plan is the polygon `plan` ([x, z] corners,
+ * either winding): upright bars at its corners and `perSide` along each side, and horizontal bars up it, all standing
+ * proud of its sides. For a glass tower, or a glass tower's storey.
+ */
+export function curtainWall(
+  plan: readonly [number, number][],
+  height: number,
+  { perSide = 3, bands = 1, bar = 0.06, depth = 0.04, corners = true, flat = false, tint = 'chalk' }: CurtainWallOptions = {},
+): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  const strip = (w: number, h: number, shading = 1) =>
+    flat ? paint(new THREE.PlaneGeometry(w, h).translate(0, h / 2, 0), tint, shading) : box(w, h, depth, tint, shading);
+  const cx = plan.reduce((s, p) => s + p[0], 0) / plan.length;
+  const cz = plan.reduce((s, p) => s + p[1], 0) / plan.length;
+  plan.forEach(([x0, z0], i) => {
+    const [x1, z1] = plan[(i + 1) % plan.length];
+    const length = Math.hypot(x1 - x0, z1 - z0);
+    // The side's outward normal (away from the plan's centre), and the turn that faces a part that way.
+    let nx = (z1 - z0) / length;
+    let nz = -(x1 - x0) / length;
+    if (nx * ((x0 + x1) / 2 - cx) + nz * ((z0 + z1) / 2 - cz) < 0) [nx, nz] = [-nx, -nz];
+    const turn = Math.atan2(nx, nz);
+    const out = flat ? depth : depth / 2;
+    const at = (t: number): [number, number] => [x0 + (x1 - x0) * t + nx * out, z0 + (z1 - z0) * t + nz * out];
+    for (let k = corners ? 0 : 1; k <= perSide; k++) {
+      const [x, z] = at(k / (perSide + 1));
+      parts.push(place(strip(bar, height), x, 0, z, turn));
+    }
+    const [mx, mz] = at(0.5);
+    for (let b = 1; b <= bands; b++) parts.push(place(strip(length, bar, 0.94), mx, (height * b) / bands - bar, mz, turn));
+  });
   return merge(parts);
 }
 
@@ -586,7 +671,7 @@ export function bench(length = 1.6, { tint = 'terracotta' as Tint, legTint = 'as
 // Growing things and stones. Seeded: the seed picks the size, lean, crown and a small shift in colour.
 
 /** A colour a little off `tint`, per seed: no two trees of a row are the same green. */
-function vary(tint: Tint, random: () => number, amount = 0.1): THREE.Color {
+export function vary(tint: Tint, random: () => number, amount = 0.1): THREE.Color {
   const c = colourOf(tint, new THREE.Color());
   const hsl = { h: 0, s: 0, l: 0 };
   c.getHSL(hsl);
@@ -594,7 +679,7 @@ function vary(tint: Tint, random: () => number, amount = 0.1): THREE.Color {
 }
 
 /** A low-poly lump: an icosahedron squashed to `sx` × `sy` × `sz`, its vertices nudged per seed. */
-function lump(sx: number, sy: number, sz: number, random: () => number, tint: THREE.Color, jitter = 0.18, detail = 0): THREE.BufferGeometry {
+export function lump(sx: number, sy: number, sz: number, random: () => number, tint: THREE.Color, jitter = 0.18, detail = 0): THREE.BufferGeometry {
   const g = new THREE.IcosahedronGeometry(1, detail);
   // Non-indexed: the same corner appears once per face. Nudge by position, so shared corners move together.
   const pos = g.getAttribute('position');

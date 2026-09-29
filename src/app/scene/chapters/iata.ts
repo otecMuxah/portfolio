@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Assembly, Piece, pieceMaterial, unit } from '../art/assembly';
+import { bench, box, bush, curtainWall, detailMesh, merge, paint, place as put, row, tree, windowGrid } from '../art/details';
 import { halo, leave, lowPoly, smoothstep } from '../art/kit';
 import { PALETTE, PaletteKey } from '../art/palette';
+import { contactShadows, ShadowSpot } from '../art/shading';
 import { ChapterBuilder } from '../chapter-scene';
 
 /** Screen-right and into the screen, seen from the camera road ((18, 7, 16) from the anchor), and where they cross. */
@@ -61,6 +63,37 @@ function heading({ from, via, to }: Arc, u: number, out: THREE.Vector3): THREE.V
   ).normalize();
 }
 
+/** The corners of a unit prism's plan (x, z), as unit() leaves a `sides`-sided cylinder: centred, 1 × 1 across. */
+function unitPlan(sides: number): [number, number][] {
+  const ring = Array.from({ length: sides }, (_, k) => [Math.sin((2 * Math.PI * k) / sides), Math.cos((2 * Math.PI * k) / sides)]);
+  const [x0, x1] = [Math.min(...ring.map((p) => p[0])), Math.max(...ring.map((p) => p[0]))];
+  const [z0, z1] = [Math.min(...ring.map((p) => p[1])), Math.max(...ring.map((p) => p[1]))];
+  return ring.map(([x, z]) => [(x - (x0 + x1) / 2) / (x1 - x0), (z - (z0 + z1) / 2) / (z1 - z0)]);
+}
+
+const SQUARE_PLAN: [number, number][] = [
+  [-0.5, -0.5],
+  [0.5, -0.5],
+  [0.5, 0.5],
+  [-0.5, 0.5],
+];
+
+/**
+ * A unit storey's curtain wall (#76): flat mullions standing just proud of each side of a unit prism, and a floor line
+ * at its top. Scaled with the storey it clads, so it goes up with it.
+ */
+function skin(plan: [number, number][], perSide: number): THREE.BufferGeometry {
+  return curtainWall(plan, 1, { perSide, bands: 1, bar: 0.035, depth: 0.012, flat: true });
+}
+
+/** Punched windows on the four faces of a unit box: a stone tower's grid, `columns` × `rows` a storey. */
+function punched(columns: number, rows: number): THREE.BufferGeometry {
+  const face = windowGrid({ columns: row(columns, 0.8 / columns), rows: row(rows, 0.9 / rows, 0.5 - 0.35 / rows), width: 0.36 / columns, height: 0.45 / rows, frame: 0, sill: 0, lit: 0 }).frames;
+  const faces = [0, 1, 2, 3].map((k) => face.clone().translate(0, 0, 0.5).rotateY((k * Math.PI) / 2));
+  face.dispose();
+  return merge(faces);
+}
+
 /** A low-poly airliner, nose along +x, about 2.8 m long: fuselage, nose, swept wings, fin and tailplane. */
 function airliner(): THREE.BufferGeometry {
   // Swept back from the root; each side is its own shape so its faces keep their winding.
@@ -96,17 +129,24 @@ function quads(corners: THREE.Vector3[][], y: number): THREE.BufferGeometry {
 /**
  * 2024–now, IATA in Frankfurt: the journey reaches today in full colour. A Frankfurt skyline rises block by block by
  * the Main, recognisable but not literal: the Messeturm's red shaft and pyramid, the Commerzbank's triangle with its
- * green sky gardens, the Main Tower's blue drum, the ECB's twin slabs by the river, the iron footbridge. Planes fly arcs
+ * green sky gardens, the Main Tower's blue drum, the ECB's twin slabs and the old market hall by the river, the iron
+ * footbridge; mullioned glass and punched windows on the towers, and, once the skyline stands, the riverbank's quays,
+ * promenade, trees and a plaza with a fountain. Planes fly arcs
  * over it, drawing their contrails as the scroll goes on. Warm again: sandstone and wheat among the glass, and a gold
  * dawn behind the towers.
  */
-export const iata: ChapterBuilder = () => {
+export const iata: ChapterBuilder = (_chapter, _index, phone = false) => {
   const object = new THREE.Group();
   const shapes = {
     box: unit(new THREE.BoxGeometry()),
     tri: unit(new THREE.CylinderGeometry(1, 1, 1, 3)),
     drum: unit(new THREE.CylinderGeometry(1, 1, 1, 8)),
     pyramid: unit(new THREE.ConeGeometry(1, 1, 4)),
+    // The towers' facades (#76): curtain walls on the glass ones, a punched grid on the stone ones.
+    boxSkin: skin(SQUARE_PLAN, 3),
+    triSkin: skin(unitPlan(3), 4),
+    drumSkin: skin(unitPlan(8), 0),
+    punched: punched(3, phone ? 2 : 3),
   };
   const solid = pieceMaterial();
   const glass = pieceMaterial({ roughness: 0.35, metalness: 0.1 });
@@ -132,24 +172,40 @@ export const iata: ChapterBuilder = () => {
     return y + count * h;
   };
 
-  // Messeturm: a red shaft that steps in, under its pyramid.
+  // Messeturm: a red stone shaft, square with a punched window grid, that turns round higher up, under its pyramid.
+  // Each facade goes on after the storeys it clads (pieces at one height set in the order given).
   let top = tower(shapes.box, -6.3, 0.6, 0, 5, [1.7, 1.15, 1.7], 'terracotta', solid);
-  top = tower(shapes.box, -6.3, 0.6, top, 3, [1.45, 1.05, 1.45], 'terracotta', solid);
+  tower(shapes.punched, -6.3, 0.6, 0, 5, [1.7, 1.15, 1.7], 'ash', solid);
+  const round = top;
+  top = tower(shapes.drum, -6.3, 0.6, top, 3, [1.6, 1.05, 1.6], 'terracotta', solid);
+  tower(shapes.drumSkin, -6.3, 0.6, round, 3, [1.6, 1.05, 1.6], 'brick', solid);
   tower(shapes.pyramid, -6.3, 0.6, top, 1, [2.05, 1.7, 2.05], 'brick', solid, SQUARE + Math.PI / 4);
-  // Commerzbank: the tallest, a triangle with a sky garden every few floors, a crown and a mast.
-  top = tower(shapes.tri, -0.8, 1.6, 0, 8, [2.7, 1.3, 2.7], (i) => (i % 3 === 2 ? 'krakowRoof' : 'steel'));
+  // Commerzbank: the tallest, a triangle with a sky garden every few floors, a crown and a mast. Its mast stays under
+  // the work layer's sign, which stands over it from the chapter camera.
+  const garden = (i: number) => i % 3 === 2;
+  top = tower(shapes.tri, -0.8, 1.6, 0, 8, [2.7, 1.22, 2.7], (i) => (garden(i) ? 'krakowRoof' : 'steel'));
+  for (let i = 0; i < 8; i++) if (!garden(i)) tower(shapes.triSkin, -0.8, 1.6, i * 1.22, 1, [2.7, 1.22, 2.7], 'chalk', solid);
+  const crown = top;
   top = tower(shapes.tri, -0.8, 1.6, top, 1, [1.8, 0.7, 1.8], 'steel');
-  tower(shapes.box, -0.8, 1.6, top, 1, [0.12, 1.3, 0.12], 'chalk', solid);
+  tower(shapes.triSkin, -0.8, 1.6, crown, 1, [1.8, 0.7, 1.8], 'chalk', solid);
+  tower(shapes.box, -0.8, 1.6, top, 1, [0.1, 1, 0.1], 'chalk', solid);
   // Main Tower: a blue glass drum beside a stone block, with a rim and a mast.
   tower(shapes.box, 3.4, 1.2, 0, 6, [1.4, 1.1, 1.4], 'sandstone', solid);
+  tower(shapes.punched, 3.4, 1.2, 0, 6, [1.4, 1.1, 1.4], 'ash', solid);
   top = tower(shapes.drum, 2.3, 0.4, 0, 8, [1.9, 1.15, 1.9], 'skyBlue');
+  tower(shapes.drumSkin, 2.3, 0.4, 0, 8, [1.9, 1.15, 1.9], 'chalk', solid);
   top = tower(shapes.drum, 2.3, 0.4, top, 1, [2.15, 0.25, 2.15], 'chalk', solid);
   tower(shapes.box, 2.3, 0.4, top, 1, [0.1, 1.8, 0.1], 'chalk', solid);
   // A slab tower behind, in the new world's blue.
   tower(shapes.box, -3.4, 3.2, 0, 7, [2.4, 1.05, 1.1], 'dawnBlue');
-  // The ECB by the river: two glass slabs turned against each other.
+  tower(shapes.boxSkin, -3.4, 3.2, 0, 7, [2.4, 1.05, 1.1], 'chalk', solid);
+  // The ECB by the river: two glass slabs turned against each other, and the long low Grossmarkthalle before them.
   tower(shapes.box, 5.7, -0.5, 0, 7, [2.1, 1.05, 0.8], 'glass', glass, SQUARE + 0.25);
+  tower(shapes.boxSkin, 5.7, -0.5, 0, 7, [2.1, 1.05, 0.8], 'steel', solid, SQUARE + 0.25);
   tower(shapes.box, 6.8, -0.2, 0, 8, [2.1, 1.05, 0.8], 'glass', glass, SQUARE - 0.12);
+  tower(shapes.boxSkin, 6.8, -0.2, 0, 8, [2.1, 1.05, 0.8], 'steel', solid, SQUARE - 0.12);
+  tower(shapes.box, 5.5, -1.15, 0, 1, [3.2, 0.5, 0.3], 'sandstoneShade', solid);
+  tower(shapes.punched, 5.5, -1.15, 0, 1, [3.2, 0.5, 0.3], 'ash', solid);
   // The city around them: low and warm.
   const blocks: [s: number, t: number, w: number, h: number, colour: PaletteKey][] = [
     [-8, 2, 2, 2.5, 'wheat'],
@@ -195,6 +251,83 @@ export const iata: ChapterBuilder = () => {
   land.forEach((m) => (m.visible = false));
   footbridge.visible = false;
 
+  // The riverbank (#76), in the same two halves: red sandstone quay walls on both banks, the promenade along the
+  // north bank under its plane trees, a paved plaza with a fountain before the Commerzbank, the grassy Museumsufer on
+  // the south bank, the footbridge's two piers, and a tour boat moored at the quay. Phones get fewer, plainer trees.
+  const riverside = new THREE.Group();
+  const shadowSpots: ShadowSpot[][] = [[], []];
+  const halves = [0, 1].map((half) => {
+    const side = half ? 1 : -1;
+    const parts: THREE.BufferGeometry[] = [];
+    const set = (part: THREE.BufferGeometry, s: number, t: number, y = 0, turn = 0) => {
+      place(s, t, 0, at);
+      return parts.push(put(part, at.x, y, at.z, SQUARE + turn));
+    };
+    const shade = (s: number, t: number, size: number) => {
+      place(s, t, 0, at);
+      shadowSpots[half].push({ x: at.x, z: at.z, w: size, d: size });
+    };
+    const mid = side * 4.4;
+    set(box(8.8, 0.14, 0.12, 'sandstoneShade', 1, true), mid, r1 + 0.06, -0.04);
+    set(box(8.8, 0.14, 0.12, 'sandstoneShade', 1, true), mid, r0 - 0.06, -0.04);
+    set(box(8.8, 0.02, 0.25, 'concrete', 1.25, true), mid, r1 + 0.245, 0.01);
+    set(box(8.8, 0.02, 1.6, 'meadow', 1.1, true), mid, r0 - 0.92, 0.01);
+    const promenade = half ? [1.1, 2.6, 8] : [-8, -6.6, -5.2, -2.1, -0.8];
+    const bankside = half ? [2.4, 5.6] : [-6.8, -4.6, -1.6];
+    promenade.forEach((s, i) => {
+      if (phone && i % 2) return;
+      set(tree('broadleaf', 760 + half * 10 + i, { height: 1.15, low: phone, foliage: 'beech' }), s, r1 + 0.28);
+      shade(s, r1 + 0.28, 0.9);
+    });
+    if (!phone)
+      bankside.forEach((s, i) => {
+        set(tree('broadleaf', 780 + half * 10 + i, { height: 1, foliage: 'meadow' }), s, r0 - 0.7);
+        set(bush(790 + half * 10 + i, 0.4), s + 0.6, r0 - 0.45);
+        shade(s, r0 - 0.7, 0.8);
+      });
+    if (half) {
+      // The tour boat, moored at the north quay.
+      set(box(1.5, 0.14, 0.36, 'chalk', 1, true), 3.3, r1 - 0.24, 0.02);
+      set(box(0.9, 0.14, 0.26, 'steel'), 3.1, r1 - 0.24, 0.16);
+    } else {
+      // The footbridge's piers, and the plaza before the Commerzbank: paving, a fountain, benches and two trees.
+      for (const t of [RIVER - 0.5, RIVER + 0.5]) set(box(0.5, 0.4, 0.2, 'sandstoneShade', 1, true), -3.5, t, 0);
+      set(box(2.3, 0.03, 1.3, 'crtBeige', 1, true), -1.3, -0.65, 0.01);
+      const basin = place(-1.3, -0.65, 0, new THREE.Vector3());
+      parts.push(
+        put(paint(new THREE.CylinderGeometry(0.42, 0.45, 0.12, 10), 'concrete', 1.1), basin.x, 0.1, basin.z),
+        put(paint(new THREE.CylinderGeometry(0.35, 0.35, 0.02, 10), 'skyBlue', 1.15), basin.x, 0.16, basin.z),
+      );
+      if (!phone) {
+        parts.push(put(paint(new THREE.ConeGeometry(0.06, 0.4, 5), 'chalk'), basin.x, 0.37, basin.z));
+        set(bench(1).scale(0.6, 0.6, 0.6), -2.1, -0.2, 0.02, Math.PI);
+        set(bench(1).scale(0.6, 0.6, 0.6), -0.5, -0.2, 0.02, Math.PI);
+      }
+      for (const s of [-2.25, -0.35]) {
+        set(tree('broadleaf', s < -1 ? 771 : 772, { height: 1, low: phone }), s, -1.1);
+        shade(s, -1.1, 0.8);
+      }
+    }
+    return detailMesh(parts);
+  });
+  // The towers' feet: a soft shadow round each (not the ground plane's own geometry), in the half it stands in.
+  for (const [s, t, size] of [
+    [-6.3, 0.6, 2.6],
+    [-0.8, 1.6, 3.2],
+    [-3.4, 3.2, 2.8],
+    [-4.8, 0.2, 2.2],
+    [2.3, 0.4, 2.6],
+    [3.4, 1.2, 2],
+    [5.7, -0.5, 2.6],
+    [6.8, -0.2, 2.6],
+  ]) {
+    place(s, t, 0, at);
+    shadowSpots[s < 0 ? 0 : 1].push({ x: at.x, z: at.z, w: size, d: size });
+  }
+  const shadows = shadowSpots.map((spots) => contactShadows(spots, { opacity: 0 }));
+  riverside.add(...halves, ...shadows);
+  riverside.visible = false;
+
   // Planes: one instanced mesh, each flying its arc; a contrail drawn behind each.
   const planes = new THREE.InstancedMesh(airliner(), lowPoly('chalk'), ARCS.length);
   planes.frustumCulled = false;
@@ -219,7 +352,7 @@ export const iata: ChapterBuilder = () => {
   const sun = halo('dawnGold', 20, 0);
   sun.position.copy(place(-2, 10, 4));
 
-  object.add(sky, sun, ...land, footbridge, skyline.object, planes, ...trails);
+  object.add(sky, sun, ...land, footbridge, riverside, skyline.object, planes, ...trails);
 
   const matrix = new THREE.Matrix4();
   const position = new THREE.Vector3();
@@ -238,6 +371,10 @@ export const iata: ChapterBuilder = () => {
       const ground = smoothstep(0, 0.15, k);
       land.forEach((m) => (m.visible = ground > 0));
       footbridge.visible = k > 0.3;
+      const dressed = smoothstep(0.05, 0.45, k);
+      riverside.visible = dressed > 0;
+      riverside.scale.y = Math.max(dressed, 1e-3);
+      shadows.forEach((m) => (m.material.opacity = 0.45 * smoothstep(0.1, 0.6, k)));
       riverMaterial.emissiveIntensity = 0.25 * ground;
       const calm = leave(local);
       sky.visible = sun.visible = k > 0;

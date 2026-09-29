@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Assembly, Piece, pieceMaterial, unit } from '../art/assembly';
+import { asDetail, bench, box, bush, detailMesh, fence, merge, place as put, rock, tree as kitTree, TreeKind } from '../art/details';
 import { halo, haloMap, leave, seeded, smoothstep } from '../art/kit';
 import { PALETTE, PaletteKey } from '../art/palette';
+import { bakeAO, contactShadows, ShadowSpot } from '../art/shading';
 import { ChapterBuilder } from '../chapter-scene';
 
 /** Screen-right and into the screen, seen from the camera road ((18, 7, 16) from the anchor). */
@@ -42,6 +44,8 @@ const HW = 2.1;
 const EAVE = 3.4;
 const RIDGE = 5.6;
 const CHIMNEY = new THREE.Vector3(-1, 0, -0.8);
+/** The clearing the house and its garden stand in: no forest tree nearer the house than this (m). */
+const GARDEN = 4.8;
 
 /** Schloss Johannisburg, across the water, turned a little from the camera so two of its wings show. */
 const CASTLE = place(-3, 6.3);
@@ -153,6 +157,16 @@ function windowGrid(rows: number, cols: number, w: number, h: number): THREE.Buf
   return merged.deleteAttribute('uv');
 }
 
+/** A dormer on a slate roof: a small upright face under its own little gable, facing +z. */
+function dormer(): THREE.BufferGeometry {
+  const face = new THREE.BoxGeometry(1, 0.62, 1).translate(0, 0.31, 0).toNonIndexed().deleteAttribute('uv');
+  const hood = prism().rotateY(Math.PI / 2).scale(1.2, 0.38, 1.1).translate(0, 0.62, 0);
+  const merged = mergeGeometries([face, hood]);
+  face.dispose();
+  hood.dispose();
+  return unit(merged);
+}
+
 /**
  * Schloss Johannisburg (1605–1614), after the descriptions of it: four red-sandstone wings of three storeys around a
  * square courtyard, a tall corner tower at each corner standing out past the walls, square up to its seventh storey
@@ -160,7 +174,7 @@ function windowGrid(rows: number, cols: number, w: number, h: number): THREE.Buf
  * the older keep in the north wing with its steep roof; and the terraces stepping down to the Main. Castle-local: the
  * river front faces +z. In assembly order: terraces, wings, towers, roofs, gables, and the caps last.
  */
-function castle(): Piece[] {
+function castle(phone = false): Piece[] {
   const solid = pieceMaterial();
   const box = unit(new THREE.BoxGeometry());
   const roof = prism();
@@ -168,8 +182,11 @@ function castle(): Piece[] {
   const cap = haube();
   const spire = unit(new THREE.ConeGeometry(1, 1, 4).rotateY(Math.PI / 4));
   const gables = gable();
-  const facade = windowGrid(3, 8, 0.055, 0.17);
-  const slits = windowGrid(5, 1, 0.22, 0.07);
+  // Its window rhythm (#76): three storeys of a dozen axes a wing between the towers, two to a tower face on each of
+  // its seven square storeys.
+  const facade = windowGrid(3, 12, 0.042, 0.17);
+  const slits = windowGrid(7, 2, 0.16, 0.055);
+  const hood = dormer();
   const y = PLINTH;
   /** Tower centres (the courtyard's outer corners), wing depth, eaves and the towers' square shafts. */
   const C = 3.4;
@@ -210,6 +227,11 @@ function castle(): Piece[] {
       { shape: slits, material: solid, colour: 'slate', at, size: [TW, TOWER, TW], turn: sx > 0 ? Math.PI / 2 : -Math.PI / 2 },
     );
   }
+  // String courses round the towers, at the wings' storeys and eaves.
+  for (const [sx, sz] of corners)
+    for (const band of phone ? [WALL] : [WALL / 3, (2 * WALL) / 3, WALL, WALL + (TOWER - WALL) / 2]) {
+      pieces.push({ shape: box, material: solid, colour: 'sandstoneShade', at: [sx * C, y + band, sz * C], size: [TW + 0.08, 0.07, TW + 0.08] });
+    }
   for (const [sx, sz] of corners) {
     pieces.push(
       { shape: box, material: solid, colour: 'mainSandstone', at: [sx * C, y + TOWER, sz * C], size: [TW + 0.3, 0.18, TW + 0.3], drop: 1 },
@@ -217,12 +239,40 @@ function castle(): Piece[] {
     );
   }
   // The keep, off-centre in the north wing: older than the rest, and not quite in step with it.
+  // Lighter than the rest, in a paler stone, with windows of its own to the courtyard.
   const keep: [number, number, number] = [1, y, -mid];
-  pieces.push({ shape: box, material: solid, colour: 'mainSandstone', at: keep, size: [1.5, 5.6, 1.5] });
+  pieces.push(
+    { shape: box, material: solid, colour: 'wheat', at: keep, size: [1.5, 5.6, 1.5] },
+    { shape: slits, material: solid, colour: 'slate', at: keep, size: [1.5, 5.6, 1.5] },
+  );
   for (const [nx, nz, turn] of sides) {
     pieces.push({ shape: roof, material: solid, colour: 'slate', at: [nx * mid, y + WALL, nz * mid], size: [2 * C, 1.5, WING + 0.4], turn, drop: 1.2 });
   }
   pieces.push({ shape: spire, material: solid, colour: 'slate', at: [keep[0], y + 5.6, keep[2]], size: [1.7, 2.2, 1.7], drop: 1.5 });
+  // The keep's four corner turrets, and the dormers down each wing's outer slope, either side of its gable.
+  for (const [sx, sz] of corners) {
+    const at: [number, number, number] = [keep[0] + sx * 0.72, y + 5.25, keep[2] + sz * 0.72];
+    pieces.push(
+      { shape: octagon, material: solid, colour: 'wheat', at, size: [0.34, 0.55, 0.34] },
+      { shape: spire, material: solid, colour: 'slate', at: [at[0], at[1] + 0.55, at[2]], size: [0.4, 0.75, 0.4], drop: 1 },
+    );
+  }
+  if (!phone)
+    for (const [nx, nz, turn] of sides)
+      for (const u of [-2.15, -1.45, 1.45, 2.15]) {
+        // Along the wing (its x, turned), and out down the slope from its ridge.
+        const ax = Math.cos(turn);
+        const az = -Math.sin(turn);
+        pieces.push({
+          shape: hood,
+          material: solid,
+          colour: 'concrete',
+          at: [nx * (mid + 0.42) + ax * u, y + WALL + 0.3, nz * (mid + 0.42) + az * u],
+          size: [0.32, 0.45, 0.36],
+          turn,
+          drop: 1,
+        });
+      }
   // Each wing's gable, its face flush with the wall's.
   const g = C + TW / 2 - 0.25;
   for (const [nx, nz, turn] of sides) {
@@ -319,6 +369,55 @@ function house(): THREE.BufferGeometry {
   return paint(parts);
 }
 
+/**
+ * The house's dressing and its garden (#76), house-local, and kept generic: sills under the windows and shutters by
+ * the smaller ones on the long side; the porch's posts, lantern and pots; a picket fence round the front
+ * and the long side, open at the drive; a swing (the daughter's) beside the drive, a bench and a flower bed under
+ * the long side's windows, and a fruit tree past the back gable. Phones get sills, the porch, a plain rail fence and
+ * the swing.
+ */
+function garden(phone: boolean): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  for (const { face, u, y, w, h, inset = 0 } of WINDOWS) {
+    if (inset) continue;
+    const { n, t, half } = wall(face);
+    const at = n.clone().multiplyScalar(half + 0.07).addScaledVector(t, u);
+    parts.push(put(box(w + 0.24, 0.06, 0.14, 'concrete', 1.15), at.x, y - 0.14, at.z, face));
+    if (phone || face !== 0 || w !== 0.9) continue;
+    for (const side of [-1, 1]) {
+      const leaf = n.clone().multiplyScalar(half + 0.02).addScaledVector(t, u + side * (w / 2 + 0.23));
+      parts.push(put(box(0.3, h + 0.1, 0.04, 'spruce', 1.2), leaf.x, y - 0.05, leaf.z, face));
+    }
+  }
+  // The porch, at the front door in the gable end.
+  for (const dz of [-0.72, 0.72]) parts.push(put(box(0.09, 2.31, 0.09, 'chalk', 0.95), HD + 0.84, 0, 1.05 + dz));
+  parts.push(put(box(0.12, 0.24, 0.12, 'ash'), HD + 0.07, 1.9, 1.77));
+  // The fence: along the long side and the front, its gate standing open across the drive.
+  const path: [number, number][] = [
+    [-3.4, 3.3],
+    [4.3, 3.3],
+    [4.3, -2.6],
+  ];
+  parts.push(fence(path, { height: 0.9, style: phone ? 'rail' : 'picket', tint: 'chalk', postTint: 'chalk', gates: [{ at: 7.7 + (3.3 - 1.05), width: 2.7 }] }));
+  // The swing, between the front gable and the fence: a frame of splayed legs, the bar, two ropes and the seat.
+  const wood: PaletteKey = 'sandstoneShade';
+  parts.push(put(box(0.07, 0.07, 1.4, wood), 3.35, 1.48, -1.5));
+  for (const z of [-2.15, -0.85])
+    for (const side of [-1, 1]) parts.push(put(box(0.07, 1.55, 0.07, wood).rotateZ(Math.asin(0.2 * side)), 3.35 + side * 0.3, 0, z));
+  for (const dz of [-0.17, 0.17]) parts.push(put(box(0.02, 1.06, 0.02, 'ash'), 3.35, 0.42, -1.5 + dz));
+  parts.push(put(box(0.22, 0.04, 0.45, 'terracotta'), 3.35, 0.4, -1.5));
+  if (!phone) {
+    parts.push(
+      put(bench(1.2), -1.3, 0, 2.75),
+      put(kitTree('broadleaf', 4812, { height: 2.6 }), -3.5, 0, 1.2),
+      ...[0.9, 1.6, 2.1].map((x, i) => put(bush(4820 + i, 0.5), x, 0, 2.4)),
+      ...[0.2, 1.9].map((z, i) => put(box(0.3, 0.3, 0.3, 'terracotta'), HD + 1.05, 0, z + (i ? 0.1 : -0.1))),
+      ...[0.1, 2.0].map((z, i) => put(bush(4830 + i, 0.42), HD + 1.05, 0.26, z)),
+    );
+  }
+  return bakeAO(merge(parts), { corner: 0, fade: 1 });
+}
+
 /** The glass of every window, the dormer's among them, and the office screen, one quad each (6 vertices, in order). */
 function panes(): THREE.BufferGeometry {
   const quads = WINDOWS.map(({ face, u, y, w, h, inset = 0 }) => onWall(face, u, y + h / 2, w, h, 0.025 - inset));
@@ -329,37 +428,27 @@ function panes(): THREE.BufferGeometry {
   return merged.deleteAttribute('uv');
 }
 
-/** Spruce: a trunk and two stacked cones. Beech: a trunk and a faceted crown. Base at the origin, `h` m tall. */
-function tree(conifer: boolean, h: number, x: number, z: number, crown: THREE.Color, trunk: THREE.Color): [THREE.BufferGeometry, THREE.Color][] {
-  if (conifer)
-    return [
-      [new THREE.CylinderGeometry(0.1, 0.14, h * 0.25, 4).translate(x, h * 0.125, z), trunk],
-      [new THREE.ConeGeometry(h * 0.24, h * 0.55, 6).translate(x, h * 0.45, z), crown],
-      [new THREE.ConeGeometry(h * 0.17, h * 0.45, 6).translate(x, h * 0.77, z), crown.clone().offsetHSL(0, 0, 0.03)],
-    ];
-  return [
-    [new THREE.CylinderGeometry(0.1, 0.16, h * 0.45, 4).translate(x, h * 0.225, z), trunk],
-    [new THREE.IcosahedronGeometry(h * 0.25, 0).scale(1, 1.1, 1).translate(x, h * 0.66, z), crown],
-  ];
-}
-
 /**
- * The forest the house stands at the edge of: spruce and beech on the near bank, off to the right behind the house
- * and closing over where the river bends away, and a few garden trees about the castle. Seeded, merged: one mesh.
+ * The forest the house stands at the edge of (#76: the Spessart's mix): mostly beech and oak, dark spruce in patches,
+ * a birch or two where there is light, on the near bank off to the right behind the house and closing over where the
+ * river bends away; a few garden trees about the castle; and at the forest's edge undergrowth and red sandstone.
+ * Seeded, merged: one mesh. Phones get fewer parts to each tree and no undergrowth. Where each tree stands comes back
+ * too, for its shadow.
  */
-function forest(): THREE.BufferGeometry {
+function forest(phone: boolean): { geometry: THREE.BufferGeometry; spots: ShadowSpot[] } {
   const random = seeded(48);
-  const parts: [THREE.BufferGeometry, THREE.Color][] = [];
+  const parts: THREE.BufferGeometry[] = [];
+  const spots: ShadowSpot[] = [];
   const spot = new THREE.Vector3();
   const plant = (s0: number, s1: number, t0: number, t1: number, count: number, conifers: number, h0: number, h1: number) => {
     for (let placed = 0, tries = 0; placed < count && tries < 400; tries++) {
       place(s0 + random() * (s1 - s0), t0 + random() * (t1 - t0), 0, spot);
       const conifer = random() < conifers;
       const h = h0 + random() * (h1 - h0);
-      const r = h * (conifer ? 0.24 : 0.25);
+      const r = h * (conifer ? 0.28 : 0.3);
       const [s, t] = framed(spot.x, spot.z);
       const inRiver = s < RIVER_END + 0.8 && t > RIVER_NEAR - r - 0.3 && t < RIVER_FAR + r + 0.3;
-      const atHouse = Math.hypot(spot.x - HOUSE.x, spot.z - HOUSE.z) < 4.2 + r;
+      const atHouse = Math.hypot(spot.x - HOUSE.x, spot.z - HOUSE.z) < GARDEN + r;
       const atCastle = Math.hypot(spot.x - CASTLE.x, spot.z - CASTLE.z) < 5.4 + r;
       if (
         inRiver ||
@@ -370,22 +459,30 @@ function forest(): THREE.BufferGeometry {
         spot.z > 3.8 - r
       )
         continue;
-      const crown = new THREE.Color(PALETTE[conifer ? 'spruce' : 'beech']).offsetHSL(
-        (random() - 0.5) * 0.03,
-        (random() - 0.5) * 0.1,
-        (random() - 0.5) * 0.08,
-      );
-      parts.push(...tree(conifer, h, spot.x, spot.z, crown, new THREE.Color(PALETTE.sandstoneShade).offsetHSL(0, -0.25, -0.12)));
+      // Broadleaves are beech or, darker, oak; a few pale birches.
+      const pick = random();
+      const kind: TreeKind = conifer ? 'conifer' : pick < 0.12 ? 'birch' : 'broadleaf';
+      const foliage: PaletteKey | undefined = kind === 'broadleaf' && pick > 0.6 ? 'meadow' : undefined;
+      parts.push(put(kitTree(kind, 4800 + tries, { height: h, low: phone, foliage }), spot.x, 0, spot.z));
+      spots.push({ x: spot.x, z: spot.z, w: r * 2.4, d: r * 2.4 });
       placed++;
     }
   };
   // Behind the house to the right, deepening off toward the road's far side, and taller as it goes back.
-  plant(5, 12, -1, 7, 30, 0.65, 3.8, 7);
-  plant(4.4, 8, -3, 0.2, 7, 0.4, 3.4, 5.5);
+  plant(5, 12, -1, 7, 30, 0.6, 3.8, 7);
+  plant(4.4, 8, -3, 0.2, 7, 0.75, 3.4, 5.5);
   // The castle's garden trees, low beside it on the far bank.
   plant(-9, -6, 4, 9, 3, 0.2, 2.4, 3.4);
   plant(3, 5, 5, 9, 2, 0.3, 2.4, 3.6);
-  return paint(parts);
+  if (!phone) {
+    // The forest's edge toward the house and the river: undergrowth, and blocks of the red sandstone it stands on.
+    for (let i = 0; i < 10; i++) {
+      place(4.4 + random() * 3.4, -1.8 + random() * 2, 0, spot);
+      if (Math.hypot(spot.x - HOUSE.x, spot.z - HOUSE.z) < GARDEN + 0.4 || spot.x > roadside(spot.z) - 0.6 || spot.z > 3.2) continue;
+      parts.push(put(i % 3 ? bush(4900 + i, 0.8 + random() * 0.5) : rock(4950 + i, 0.6, 'sandstoneShade'), spot.x, 0, spot.z));
+    }
+  }
+  return { geometry: merge(parts), spots };
 }
 
 /** Terrain height at (x, z): the near bank, the river bed under the water, and the far bank rising to the castle. */
@@ -477,7 +574,7 @@ const SMOKE_RISE = 3.2;
  * colour since the war, and the house's windows light one by one: life coming back. One of them holds a small cool
  * screen: the job, done from home.
  */
-export const ciklum: ChapterBuilder = () => {
+export const ciklum: ChapterBuilder = (_chapter, _index, phone = false) => {
   const object = new THREE.Group();
   const painted = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.9, metalness: 0 });
 
@@ -491,11 +588,17 @@ export const ciklum: ChapterBuilder = () => {
     emissiveIntensity: 0,
   });
   const main = new THREE.Mesh(river(), water);
-  const trees = new THREE.Mesh(forest(), painted);
+  const woods = forest(phone);
+  const trees = asDetail(new THREE.Mesh(woods.geometry, painted));
 
   // The house, turned to the road.
   const toHouse = new THREE.Matrix4().makeRotationY(HOUSE_YAW).scale(new THREE.Vector3().setScalar(HOUSE_SCALE)).setPosition(HOUSE);
-  const home = new THREE.Mesh(house().applyMatrix4(toHouse), painted);
+  const home = new THREE.Mesh(bakeAO(house()).applyMatrix4(toHouse), painted);
+  const dressing = detailMesh(garden(phone).applyMatrix4(toHouse), painted);
+  // Soft shadows under the house and the near bank's trees (the far bank rises, so only this side's lie flat).
+  const feet: ShadowSpot[] = [{ x: HOUSE.x, z: HOUSE.z, w: 2 * HD * HOUSE_SCALE + 1.2, d: 2 * HW * HOUSE_SCALE + 1.2 }];
+  for (const s of woods.spots) if (framed(s.x, s.z)[1] < RIVER_NEAR) feet.push(s);
+  const shadows = contactShadows(feet, { opacity: 0.4, y: 0.08 });
   const glass = panes().applyMatrix4(toHouse);
   const paneColour = new THREE.BufferAttribute(new Float32Array(glass.getAttribute('position').count * 3), 3);
   glass.setAttribute('color', paneColour);
@@ -546,7 +649,7 @@ export const ciklum: ChapterBuilder = () => {
   mist.frustumCulled = false;
   mist.renderOrder = 1;
 
-  const assembly = new Assembly(castle(), 4 / 44);
+  const assembly = new Assembly(castle(phone), 4 / 44);
   assembly.object.position.copy(CASTLE);
   assembly.object.rotation.y = CASTLE_YAW;
   assembly.object.scale.setScalar(CASTLE_SCALE);
@@ -557,7 +660,7 @@ export const ciklum: ChapterBuilder = () => {
   const sunrise = halo('dawnGold', 24, 0);
   sunrise.position.copy(place(-3, 18, 2));
 
-  object.add(dawn, sunrise, nearBank, farBank, main, trees, home, windows, assembly.object, glows, smoke, mist);
+  object.add(dawn, sunrise, nearBank, farBank, main, shadows, trees, home, dressing, windows, assembly.object, glows, smoke, mist);
 
   const lit = new THREE.Color();
   const screenGlow = new THREE.Color(PALETTE.screenGlow);
