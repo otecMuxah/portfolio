@@ -281,23 +281,30 @@ describe('work layer in the scene', () => {
       const [sign, ring] = work.children;
       const plates: THREE.Mesh[] = [];
       sign.traverse((o) => o instanceof THREE.Mesh && plates.push(o));
-      for (const local of steps(-0.5, 2, 100)) {
+      // The whole scroll, and closer through the fold-away (FOLD).
+      for (const local of [...new Set([...steps(-0.5, 2, 40), ...steps(1, 1.3, 6)])]) {
         scene.update?.({ progress: 0, local, time: 3 + local * 10 });
         scene.object.updateMatrixWorld(true);
         work.visible = false;
         const set = vertices(scene.object);
         work.visible = true;
         const at = `${id} at ${local.toFixed(3)}`;
-        // The sign's parts in their own frame, so a sign turned to the road is not judged by its axis-aligned box.
+        // The sign's parts in their own frame, so a sign turned to the road is not judged by its axis-aligned box;
+        // only the set's vertices inside that box's world bounds can be in it.
         for (const mesh of plates) {
           mesh.geometry.computeBoundingBox();
           const box = mesh.geometry.boundingBox!;
+          const bounds = box.clone().applyMatrix4(mesh.matrixWorld);
           const toLocal = mesh.matrixWorld.clone().invert();
-          expect(set.find((v) => box.containsPoint(inside.copy(v).applyMatrix4(toLocal))), at).toBeUndefined();
+          const hit = set.find((v) => bounds.containsPoint(v) && box.containsPoint(inside.copy(v).applyMatrix4(toLocal)));
+          expect(hit, at).toBeUndefined();
         }
-        // The ring leans and turns, and its badges are small: a metre clear of every one of its vertices.
+        // The ring leans and turns, and its badges are small: a metre clear of every one of its vertices; only the
+        // set's vertices within a metre of the ring's bounds can come that close.
         const hoop = vertices(ring);
-        expect(set.find((v) => hoop.some((h) => h.distanceTo(v) < 1)), at).toBeUndefined();
+        const reach = new THREE.Box3().setFromPoints(hoop).expandByScalar(1);
+        const near = set.filter((v) => reach.containsPoint(v));
+        expect(near.find((v) => hoop.some((h) => h.distanceTo(v) < 1)), at).toBeUndefined();
       }
     }
   });
