@@ -319,6 +319,40 @@ export function canopy(w: number, d: number, height: number, { tint = 'chalk' as
   return merge(parts);
 }
 
+/**
+ * An arcade on a wall `length` wide (#75): `bays` round-headed openings, dark behind, on piers standing proud, each
+ * under an arch ring; the openings' arches spring at `spring`. The wall between them (the spandrels) is the wall's own.
+ */
+export function arcade(
+  length: number,
+  bays: number,
+  spring: number,
+  { pier = 0.2, depth = 0.12, segments = 5, tint = 'chalk' as Tint, shadow = 'ground' as Tint } = {},
+): THREE.BufferGeometry {
+  const span = (length - pier * (bays + 1)) / bays;
+  const parts: THREE.BufferGeometry[] = [];
+  for (const x of row(bays, span + pier)) {
+    parts.push(place(paint(glass(span, spring, true), shadow), x, 0, 0));
+    parts.push(place(arch(span + pier * 0.5, { thickness: pier * 0.5, depth, segments, tint }), x, spring, 0));
+  }
+  for (const x of row(bays + 1, span + pier)) parts.push(place(box(pier, spring, depth, tint, 0.94), x, 0, depth / 2));
+  return merge(parts);
+}
+
+/** An onion dome of `radius` standing on y = 0, `height` to its tip, turned from a lathe profile of `sides` facets. */
+export function onion(radius: number, height = radius * 2.2, { sides = 8, tint = 'dawnGold' as Tint } = {}): THREE.BufferGeometry {
+  const profile = [
+    [0.55, 0],
+    [0.95, 0.14],
+    [1, 0.3],
+    [0.8, 0.52],
+    [0.35, 0.78],
+    [0.08, 0.92],
+    [0, 1],
+  ].map(([r, y]) => new THREE.Vector2(r * radius, y * height));
+  return paint(new THREE.LatheGeometry(profile, sides), tint);
+}
+
 export interface CorniceOptions {
   /** Stepped tiers of the profile, each standing out further. Default 2. */
   tiers?: number;
@@ -637,7 +671,7 @@ export function bench(length = 1.6, { tint = 'terracotta' as Tint, legTint = 'as
 // Growing things and stones. Seeded: the seed picks the size, lean, crown and a small shift in colour.
 
 /** A colour a little off `tint`, per seed: no two trees of a row are the same green. */
-function vary(tint: Tint, random: () => number, amount = 0.1): THREE.Color {
+export function vary(tint: Tint, random: () => number, amount = 0.1): THREE.Color {
   const c = colourOf(tint, new THREE.Color());
   const hsl = { h: 0, s: 0, l: 0 };
   c.getHSL(hsl);
@@ -645,7 +679,7 @@ function vary(tint: Tint, random: () => number, amount = 0.1): THREE.Color {
 }
 
 /** A low-poly lump: an icosahedron squashed to `sx` × `sy` × `sz`, its vertices nudged per seed. */
-function lump(sx: number, sy: number, sz: number, random: () => number, tint: THREE.Color, jitter = 0.18, detail = 0): THREE.BufferGeometry {
+export function lump(sx: number, sy: number, sz: number, random: () => number, tint: THREE.Color, jitter = 0.18, detail = 0): THREE.BufferGeometry {
   const g = new THREE.IcosahedronGeometry(1, detail);
   // Non-indexed: the same corner appears once per face. Nudge by position, so shared corners move together.
   const pos = g.getAttribute('position');
