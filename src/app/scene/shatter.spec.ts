@@ -65,7 +65,8 @@ describe('the shatter', () => {
 
   it('stays within budget while it flies: triangles, draw calls and particles for the whole broken world', () => {
     const { triangles, drawCalls, particles, shards } = shatter.stats;
-    // 45k until #64 gave the pre-war career cards the CV's full stack (about 200 more); about 39.8k since #70 left detail out.
+    // 45k until #64 gave the pre-war career cards the CV's full stack (about 200 more); about 39.8k since #70 left detail out,
+    // 40.0k with the F30's wheel faces (#72).
     expect(triangles).toBeLessThanOrEqual(46_000);
     expect(drawCalls).toBeLessThanOrEqual(70);
     expect(particles).toBeLessThanOrEqual(3_000);
@@ -74,7 +75,7 @@ describe('the shatter', () => {
 
   it('breaks coarser on a phone: the same world in fewer triangles', () => {
     const phone = new Shatter(world(true), 2402, PHONE_MAX_EDGE).stats;
-    // About 39.8k on a desktop, 16.9k on a phone (#70).
+    // About 39.8k on a desktop, 16.9k on a phone (#70); 40.0k and 17.0k with the F30's wheel faces (#72).
     expect(phone.triangles).toBeLessThanOrEqual(20_000);
     expect(phone.drawCalls).toBe(shatter.stats.drawCalls);
   });
