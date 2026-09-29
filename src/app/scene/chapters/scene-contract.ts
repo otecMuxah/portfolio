@@ -6,15 +6,15 @@ import { ChapterScene } from '../chapter-scene';
 import { withWorkLayer } from '../work/work-layer';
 import { CHAPTER_BUILDERS } from '.';
 
-/** Builds a chapter's scene, as the engine would: with its work layer. */
-export function build(id: ChapterId): ChapterScene {
+/** Builds a chapter's scene, as the engine would: with its work layer, for a phone when `phone`. */
+export function build(id: ChapterId, phone = false): ChapterScene {
   const index = CHAPTERS.findIndex((c) => c.id === id);
-  return withWorkLayer(CHAPTER_BUILDERS[CHAPTERS[index].scene](CHAPTERS[index], index), CHAPTERS[index]);
+  return withWorkLayer(CHAPTER_BUILDERS[CHAPTERS[index].scene](CHAPTERS[index], index, phone), CHAPTERS[index]);
 }
 
 /** Builds a chapter's scene and poses it at a local progress. */
-export function built(id: ChapterId, local: number, time = 3): THREE.Object3D {
-  const scene = build(id);
+export function built(id: ChapterId, local: number, time = 3, phone = false): THREE.Object3D {
+  const scene = build(id, phone);
   scene.update?.({ progress: 0, local, time });
   scene.object.updateMatrixWorld(true);
   return scene.object;
@@ -112,15 +112,26 @@ export function stubCanvas(): void {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as never);
 }
 
+/** Per chapter, work layer included, framed (local 0.5): what a desktop draws, and the triangles a phone does (#70). */
+export const BUDGET = { triangles: 15_000, drawCalls: 40, particles: 1500, phoneTriangles: 6000 } as const;
+
 /** The art-direction contract every chapter scene keeps: budget, plot, road, and state from scroll alone. */
 export function sceneContract(id: ChapterId): void {
   describe(id, () => {
     it('stays within the per-chapter budget', () => {
       const { triangles, drawCalls, particles, lights } = stats(built(id, 0.5));
-      expect(triangles).toBeLessThanOrEqual(5000);
-      expect(drawCalls).toBeLessThanOrEqual(25);
-      expect(particles).toBeLessThanOrEqual(1500);
+      expect(triangles).toBeLessThanOrEqual(BUDGET.triangles);
+      expect(drawCalls).toBeLessThanOrEqual(BUDGET.drawCalls);
+      expect(particles).toBeLessThanOrEqual(BUDGET.particles);
       // Real lights cost every fragment in the world; chapters fake theirs with glow and halos.
+      expect(lights).toBe(0);
+    });
+
+    it('stays within the phone budget when built for a phone', () => {
+      const { triangles, drawCalls, particles, lights } = stats(built(id, 0.5, 3, true));
+      expect(triangles).toBeLessThanOrEqual(BUDGET.phoneTriangles);
+      expect(drawCalls).toBeLessThanOrEqual(BUDGET.drawCalls);
+      expect(particles).toBeLessThanOrEqual(BUDGET.particles);
       expect(lights).toBe(0);
     });
 

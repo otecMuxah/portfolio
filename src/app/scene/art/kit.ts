@@ -97,7 +97,7 @@ export function halo(key: PaletteKey, size: number, opacity = 0.6): THREE.Sprite
 export { haloMap };
 
 /** A box of size w×h×d whose base sits at (x, y, z): the building block of every low-poly structure. */
-export function block(w: number, h: number, d: number, x: number, z: number, y = 0): THREE.BufferGeometry {
+export function block(w: number, h: number, d: number, x = 0, z = 0, y = 0): THREE.BufferGeometry {
   return new THREE.BoxGeometry(w, h, d).translate(x, y + h / 2, z);
 }
 
