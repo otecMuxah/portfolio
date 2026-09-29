@@ -167,7 +167,9 @@ export interface ShatterStats {
  * are copied in world space, split into chunks and baked into one geometry per material, with each chunk's centre,
  * delay, flight and tumble as vertex attributes. From then on the pose of every shard is computed on the GPU from a
  * single uniform, the war's local progress, so a frame costs one uniform write and scrolling back un-breaks exactly.
- * Lights (halos, light pools, embers) don't break; they go out first.
+ * Lights (halos, light pools, embers) don't break; they go out first. Detail (`userData.detail`, art/details.ts: window
+ * frames, fences, trees, contact shadows) isn't broken or copied at all: it goes out with its chapter as the war starts,
+ * so a chapter's dressing costs the broken world nothing.
  */
 export class Shatter {
   readonly object = new THREE.Group();
@@ -220,7 +222,12 @@ export class Shatter {
       };
 
       const visible: THREE.Object3D[] = [];
-      source.traverseVisible((obj) => visible.push(obj));
+      const collect = (obj: THREE.Object3D) => {
+        if (!obj.visible || obj.userData['detail']) return;
+        visible.push(obj);
+        obj.children.forEach(collect);
+      };
+      collect(source);
       for (const obj of visible) {
         if (obj instanceof THREE.Sprite) {
           this.addLight(new THREE.Sprite(obj.material.clone()), obj);

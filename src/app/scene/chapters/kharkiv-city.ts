@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { PaneRhythm, paneSlots } from '../art/details';
 import { kharkivSkyline } from '../art/kharkiv';
 import { lowPoly, seeded, smoothstep } from '../art/kit';
 import { PaletteKey } from '../art/palette';
@@ -30,7 +31,7 @@ export function risingSkyline(tints: SkylineTints) {
   };
 }
 
-const WINDOW = { w: 0.32, h: 0.45, dx: 0.8, dy: 1.05 };
+const WINDOW: PaneRhythm = { w: 0.32, h: 0.45, dx: 0.8, dy: 1.05, bottom: 0.8, top: 0.3, start: 0.45, end: 0.3 };
 
 /**
  * Window panes on the skyline's camera-facing walls (+z fronts and +x sides), as one merged
@@ -61,18 +62,15 @@ export function skylineWindows(
       if (!front && !side) continue;
       box.makeEmpty();
       for (let k = 0; k < 6; k++) box.expandByPoint(a.fromBufferAttribute(pos, i + k));
-      const across = front ? [box.min.x, box.max.x] : [box.min.z, box.max.z];
-      for (let y = box.min.y + 0.8; y + WINDOW.h < box.max.y - 0.3; y += WINDOW.dy) {
-        for (let u = across[0] + 0.45; u + WINDOW.w < across[1] - 0.3; u += WINDOW.dx) {
-          if (random() > share) continue;
-          const pane = new THREE.PlaneGeometry(WINDOW.w, WINDOW.h);
-          if (front) pane.translate(u + WINDOW.w / 2, y + WINDOW.h / 2, box.max.z + 0.03);
-          else
-            pane
-              .rotateY(Math.PI / 2)
-              .translate(box.max.x + 0.03, y + WINDOW.h / 2, u + WINDOW.w / 2);
-          panes.push(pane);
-        }
+      const across: [number, number] = front ? [box.min.x, box.max.x] : [box.min.z, box.max.z];
+      for (const [u, y] of paneSlots(across, [box.min.y, box.max.y], WINDOW, share, random)) {
+        const pane = new THREE.PlaneGeometry(WINDOW.w, WINDOW.h);
+        if (front) pane.translate(u + WINDOW.w / 2, y + WINDOW.h / 2, box.max.z + 0.03);
+        else
+          pane
+            .rotateY(Math.PI / 2)
+            .translate(box.max.x + 0.03, y + WINDOW.h / 2, u + WINDOW.w / 2);
+        panes.push(pane);
       }
     }
   }

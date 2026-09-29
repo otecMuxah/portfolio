@@ -1,22 +1,11 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { enter, glow, leave, lowPoly, seeded, smoothstep } from '../art/kit';
+import { gable } from '../art/details';
+import { block, enter, glow, leave, lowPoly, seeded, smoothstep } from '../art/kit';
 import { ChapterBuilder } from '../chapter-scene';
 
 const FACE_ROAD = 0.4;
 const CITY_SCALE = 0.7;
-
-/** A gabled roof: a triangular prism along z with its base at y = 0. */
-function gable(width: number, height: number, depth: number): THREE.BufferGeometry {
-  return new THREE.CylinderGeometry(1, 1, depth, 3)
-    .rotateX(-Math.PI / 2)
-    .scale(width / Math.sqrt(3), height / 1.5, 1)
-    .translate(0, height / 3, 0);
-}
-
-/** A box standing on y = 0. */
-const block = (w: number, h: number, d: number) =>
-  new THREE.BoxGeometry(w, h, d).translate(0, h / 2, 0);
 
 /** A group that rises out of the ground from its base. */
 function building(x: number, z: number, ...parts: THREE.Object3D[]): THREE.Group {

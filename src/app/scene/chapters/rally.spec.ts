@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CHAPTERS } from '../../content/life';
-import { build, built, stats, stubCanvas, vertices } from './scene-contract';
+import { BUDGET, build, built, stats, stubCanvas, vertices } from './scene-contract';
 
 /** Road surface and dust live on the car's road by design; everything else is scenery. */
 const onRoad = (obj: THREE.Object3D) => obj.name === 'stage-road' || obj.name === 'dust' || obj.parent?.name === 'stage-road';
@@ -23,10 +23,19 @@ describe('rally scene', () => {
     const { triangles, drawCalls, lights } = stats(object);
     // Dust puffs are instances, not points; bill each one as a particle too.
     const particles = stats(object).particles + (object.getObjectByName('dust') as THREE.InstancedMesh).count;
-    expect(triangles).toBeLessThanOrEqual(5000);
-    expect(drawCalls).toBeLessThanOrEqual(25);
-    expect(particles).toBeLessThanOrEqual(1500);
+    expect(triangles).toBeLessThanOrEqual(BUDGET.triangles);
+    expect(drawCalls).toBeLessThanOrEqual(BUDGET.drawCalls);
+    expect(particles).toBeLessThanOrEqual(BUDGET.particles);
     expect(lights).toBe(0);
+  });
+
+  it('stays within the phone budget when built for a phone', () => {
+    const object = built('rally', 0.5, 3, true);
+    const { triangles, drawCalls } = stats(object);
+    const particles = stats(object).particles + (object.getObjectByName('dust') as THREE.InstancedMesh).count;
+    expect(triangles).toBeLessThanOrEqual(BUDGET.phoneTriangles);
+    expect(drawCalls).toBeLessThanOrEqual(BUDGET.drawCalls);
+    expect(particles).toBeLessThanOrEqual(BUDGET.particles);
   });
 
   it('keeps its scenery inside the 12 m plot and out of the car lane, before, during and after the camera', () => {

@@ -1,15 +1,16 @@
 import * as THREE from 'three';
 import { CHAPTERS } from '../content/life';
+import { asDetail } from './art/details';
 import { buildCar } from './cars';
 import { chapterAnchor } from './chapter-scene';
 import { build, stubCanvas } from './chapters/scene-contract';
 import { PHONE_MAX_EDGE, SHAKE_STOP, SHATTERED, Shatter, ShardPose, shakeAt, shardPose, tumbleAxis } from './shatter';
 
 /** Everything built before the war, posed as it stands once built, plus the F30 on the road: what the engine breaks. */
-function world(): THREE.Object3D[] {
+function world(phone = false): THREE.Object3D[] {
   const sources: THREE.Object3D[] = CHAPTERS.flatMap((chapter, index) => {
     if (chapter.phase !== 'build') return [];
-    const scene = build(chapter.id);
+    const scene = build(chapter.id, phone);
     scene.update?.({ progress: 0, local: 1.2, time: 3 });
     scene.object.position.copy(chapterAnchor(index));
     return [scene.object];
@@ -64,7 +65,7 @@ describe('the shatter', () => {
 
   it('stays within budget while it flies: triangles, draw calls and particles for the whole broken world', () => {
     const { triangles, drawCalls, particles, shards } = shatter.stats;
-    // 45k until #64 gave the pre-war career cards the CV's full stack (about 200 more).
+    // 45k until #64 gave the pre-war career cards the CV's full stack (about 200 more); about 39.8k since #70 left detail out.
     expect(triangles).toBeLessThanOrEqual(46_000);
     expect(drawCalls).toBeLessThanOrEqual(70);
     expect(particles).toBeLessThanOrEqual(3_000);
@@ -72,16 +73,32 @@ describe('the shatter', () => {
   });
 
   it('breaks coarser on a phone: the same world in fewer triangles', () => {
-    const phone = new Shatter(world(), 2402, PHONE_MAX_EDGE).stats;
-    // About 45.2k on a desktop, 18.7k on a phone.
+    const phone = new Shatter(world(true), 2402, PHONE_MAX_EDGE).stats;
+    // About 39.8k on a desktop, 16.9k on a phone (#70).
     expect(phone.triangles).toBeLessThanOrEqual(20_000);
     expect(phone.drawCalls).toBe(shatter.stats.drawCalls);
   });
 
+  it('leaves detail out: a detail mesh, or anything under one, is not shattered', () => {
+    const group = new THREE.Group();
+    const child = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial());
+    group.add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()), child);
+    group.children[0].add(new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshStandardMaterial()));
+    const whole = new Shatter([group]).stats;
+    expect(whole.triangles).toBeGreaterThan(0);
+    asDetail(group.children[0]);
+    const kept = new Shatter([group]).stats;
+    expect(kept.triangles).toBe(new Shatter([child]).stats.triangles);
+    expect(kept.triangles).toBeLessThan(whole.triangles);
+    asDetail(group);
+    expect(new Shatter([group]).stats).toMatchObject({ triangles: 0, drawCalls: 0 });
+  });
+
   it('starts as the world it copies: at rest every shard sits where the built world is', () => {
+    const detail = (o: THREE.Object3D | null): boolean => !!o && (!!o.userData['detail'] || detail(o.parent));
     const solid = (o: THREE.Object3D) => {
       const m = (o as THREE.Mesh).material as THREE.Material & { map?: THREE.Texture | null };
-      return o instanceof THREE.Mesh && !m.map;
+      return o instanceof THREE.Mesh && !m.map && !detail(o);
     };
     // Every vertex, instances included: Box3.expandByObject only bounds an InstancedMesh loosely.
     const built = new THREE.Box3();

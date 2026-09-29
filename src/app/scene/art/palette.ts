@@ -52,6 +52,8 @@ export const PALETTE = {
   meadow: '#48633a',
 
   concrete: '#6b6b6b',
+  /** School No. 126 (#70): pale silicate brick, the period-typical finish of a Soviet school (inferred: no photo found). */
+  silicate: '#cfc6b2',
 } as const;
 
 export type PaletteKey = keyof typeof PALETTE;
