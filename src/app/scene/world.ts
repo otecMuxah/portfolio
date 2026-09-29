@@ -130,7 +130,7 @@ class CarLine {
 // Sky.
 
 /** The dome's rings, by elevation (degrees): the horizon is the fog, a faint glow just above it, dark overhead. */
-const RINGS = [-90, -8, 0, 2, 5, 9, 14, 22, 34, 50, 70, 90];
+const RINGS = [-8, 0, 2, 5, 9, 14, 22, 34, 50, 70, 90];
 const SKY_RADIUS = 400;
 /** Night: the fog colour at the horizon, a city's glow just above it, and a darker zenith. Dawn: the same, lifting. */
 const SKY = {
