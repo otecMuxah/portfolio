@@ -12,14 +12,18 @@ const EMBER_TOP = 16;
  * are lit, a warm glow hangs over the city and embers of light drift up from it. The
  * fullest, warmest frame of the journey, just before the war.
  */
-export const backHome: ChapterBuilder = () => {
+export const backHome: ChapterBuilder = (_chapter, _index, phone = false) => {
   const object = new THREE.Group();
-  const { skyline, rise } = risingSkyline({
-    derzhprom: 'homeGlow',
-    'panel-blocks': 'homeWarm',
-    'brick-blocks': 'terracotta',
-  });
   const windowGlow = glow('homeGlow', 1.6);
+  const { skyline, rise } = risingSkyline(
+    {
+      derzhprom: 'homeGlow',
+      'panel-blocks': 'homeWarm',
+      'brick-blocks': 'terracotta',
+    },
+    windowGlow,
+    phone,
+  );
   const windows = new THREE.Mesh(skylineWindows(skyline, 0.75, 2022), windowGlow);
 
   // The city's glow: a wide halo behind Derzhprom and a pool of warm light on the ground.
@@ -62,9 +66,9 @@ export const backHome: ChapterBuilder = () => {
     object,
     update({ local, time }) {
       const built = enter(local);
-      rise(built);
       const calm = leave(local);
       const lit = smoothstep(0.7, 1, built);
+      rise(built, lit);
       windows.visible = lit > 0;
       windowGlow.emissiveIntensity = 1.6 * lit * (1 - 0.3 * calm);
       sky.visible = pool.visible = embers.visible = lit > 0;
