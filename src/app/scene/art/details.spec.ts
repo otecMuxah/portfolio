@@ -8,6 +8,7 @@ import {
   bush,
   canopy,
   chimney,
+  column,
   cornice,
   detailMesh,
   door,
@@ -15,6 +16,7 @@ import {
   gable,
   gabledRoof,
   groundTile,
+  hipRoof,
   merge,
   paintedMaterial,
   paneSlots,
@@ -57,6 +59,9 @@ describe('detail kit', () => {
       tree('birch', 1),
       bush(1),
       rock(1),
+      column(1.4, 0.1),
+      hipRoof(4, 2, 1),
+      hipRoof(2, 4, 1),
     ];
     for (const g of parts) {
       expect(g.index).toBeNull();
@@ -96,6 +101,37 @@ describe('detail kit', () => {
     expect(all[0]).toEqual([0.45, 0.8]);
     let i = 0;
     expect(paneSlots([0, 4], [0, 5], rhythm, 0.5, () => (i++ % 2 ? 0.9 : 0.1)).length).toBe(8);
+  });
+
+  it('hips a roof in six outward-facing triangles, its ridge along the longer side (#73)', () => {
+    for (const [w, d] of [
+      [4, 2],
+      [2, 4],
+    ]) {
+      const roof = hipRoof(w, d, 1, { overhang: 0 });
+      expect(triangles(roof)).toBe(6);
+      roof.computeBoundingBox();
+      [-w / 2, 0, -d / 2].forEach((v, i) => expect(roof.boundingBox!.min.getComponent(i)).toBeCloseTo(v, 6));
+      [w / 2, 1, d / 2].forEach((v, i) => expect(roof.boundingBox!.max.getComponent(i)).toBeCloseTo(v, 6));
+      // Every slope faces up and out, away from the middle.
+      const pos = roof.getAttribute('position');
+      const t = new THREE.Triangle();
+      const n = new THREE.Vector3();
+      const mid = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i += 3) {
+        t.setFromAttributeAndIndices(pos, i, i + 1, i + 2).getNormal(n);
+        t.getMidpoint(mid);
+        expect(n.y).toBeGreaterThan(0);
+        expect(n.x * mid.x + n.z * mid.z).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('stands a column on y = 0, as tall as asked (#73)', () => {
+    const c = column(1.4, 0.1);
+    c.computeBoundingBox();
+    expect(c.boundingBox!.min.y).toBeCloseTo(0, 6);
+    expect(c.boundingBox!.max.y).toBeCloseTo(1.4, 6);
   });
 
   it('spaces a row evenly about its centre', () => {
