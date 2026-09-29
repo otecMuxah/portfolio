@@ -54,9 +54,16 @@ const COLOURS = {
   shirt: '#f4b860',
   trousers: '#4d7ea8',
   shoes: '#2e2a28',
+  soles: '#e6e0d4',
+  collar: '#fbe6c0',
+  eyes: '#2a1d16',
+  nose: '#d9a077',
+  pack: '#b5453a',
+  straps: '#3a2a26',
   frame: '#3f9c9a',
   tyre: '#6a6e78',
   metal: '#26282e',
+  chrome: '#b8bdc4',
 };
 
 /** One pose in the body's side plane. Limb angles are world, swung forward from hanging straight down; left then right. */
@@ -114,6 +121,8 @@ export class RiderRig {
   private readonly pelvis: THREE.Bone;
   private readonly torso: Limb;
   private readonly neck: Limb;
+  /** The school satchel, on the torso: scaled with it, and to nothing outside the school years. */
+  private readonly pack: THREE.Bone;
   private readonly arms: [Limb, Limb][] = [];
   private readonly legs: [Limb, Limb, Limb][] = [];
   private readonly bike: THREE.Bone;
@@ -134,6 +143,7 @@ export class RiderRig {
     this.pelvis = this.bone(this.hips);
     this.torso = limb(this.hips);
     this.neck = limb(this.torso.joint);
+    this.pack = this.bone(this.torso.joint);
     for (let i = 0; i < 2; i++) {
       const upper = limb(this.torso.joint);
       const fore = limb(upper.joint);
@@ -148,33 +158,58 @@ export class RiderRig {
     const limbPart = () => new THREE.CylinderGeometry(0.5, 0.42, 1, 5).translate(0, -0.5, 0);
     add(new THREE.BoxGeometry(1, 1, 1).translate(0, -0.25, 0), this.pelvis, COLOURS.trousers);
     add(new THREE.CylinderGeometry(0.5, 0.4, 1, 6).translate(0, 0.5, 0), this.torso.segment, COLOURS.shirt);
-    // Faceless: a round head with a cap of hair set back, so it reads which way he faces.
+    add(new THREE.CylinderGeometry(0.36, 0.44, 0.12, 6).translate(0, 1, 0), this.torso.segment, COLOURS.collar);
+    // A round head with a cap of hair set back and a fringe over the brow; a hint of a face (eyes, nose) says which
+    // way he faces.
     add(new THREE.IcosahedronGeometry(0.5, 1).translate(0, 0.5, 0), this.neck.segment, COLOURS.skin);
     add(new THREE.IcosahedronGeometry(0.52, 1).translate(-0.08, 0.57, 0), this.neck.segment, COLOURS.hair);
+    add(new THREE.BoxGeometry(0.1, 0.22, 0.62).rotateZ(0.64).translate(0.38, 0.79, 0.04), this.neck.segment, COLOURS.hair);
+    for (const side of [-1, 1]) {
+      add(new THREE.BoxGeometry(0.08, 0.1, 0.1).translate(0.46, 0.58, side * 0.17), this.neck.segment, COLOURS.eyes);
+    }
+    add(new THREE.BoxGeometry(0.09, 0.12, 0.09).rotateZ(0.3).translate(0.48, 0.46, 0), this.neck.segment, COLOURS.nose);
+    // T-shirt sleeves to half way down the upper arm, with a hem.
     for (const [upper, fore] of this.arms) {
-      add(limbPart(), upper.segment, COLOURS.shirt);
+      add(new THREE.CylinderGeometry(0.5, 0.47, 0.55, 5).translate(0, -0.275, 0), upper.segment, COLOURS.shirt);
+      add(new THREE.CylinderGeometry(0.56, 0.56, 0.12, 5).translate(0, -0.52, 0), upper.segment, COLOURS.collar);
+      add(new THREE.CylinderGeometry(0.46, 0.42, 0.45, 5).translate(0, -0.775, 0), upper.segment, COLOURS.skin);
       add(limbPart(), fore.segment, COLOURS.skin);
     }
+    // Trainers: a dark upper on a pale sole.
     for (const [thigh, shin, foot] of this.legs) {
       add(limbPart(), thigh.segment, COLOURS.trousers);
       add(limbPart(), shin.segment, COLOURS.trousers);
-      add(new THREE.BoxGeometry(1, 1, 1).translate(0.25, -0.5, 0), foot.segment, COLOURS.shoes);
+      add(new THREE.BoxGeometry(1, 0.7, 1).translate(0.25, -0.35, 0), foot.segment, COLOURS.shoes);
+      add(new THREE.BoxGeometry(1.08, 0.34, 1.08).translate(0.26, -0.84, 0), foot.segment, COLOURS.soles);
     }
+    // The satchel on his back in the school years, in the torso's unit space: case, flap, and straps over the chest.
+    add(new THREE.BoxGeometry(0.5, 0.58, 0.82).translate(-0.66, 0.56, 0), this.pack, COLOURS.pack);
+    add(new THREE.BoxGeometry(0.1, 0.34, 0.74).translate(-0.94, 0.66, 0), this.pack, COLOURS.straps);
+    for (const side of [-1, 1]) add(new THREE.BoxGeometry(0.1, 0.72, 0.12).translate(0.47, 0.6, side * 0.24), this.pack, COLOURS.straps);
 
     this.bike = this.bone(null);
     this.wheels = [REAR, FRONT].map(([x, y]) => {
       const wheel = this.bone(this.bike);
       wheel.position.set(x, y, 0);
       add(new THREE.TorusGeometry(WHEEL - 0.045, 0.045, 4, 14), wheel, COLOURS.tyre);
-      for (const turn of [0, Math.PI / 2])
-        add(new THREE.BoxGeometry(2 * (WHEEL - 0.04), 0.014, 0.014).rotateZ(turn), wheel, COLOURS.metal);
+      // Eight spokes, crossing at a hub.
+      for (let turn = 0; turn < 4; turn++)
+        add(new THREE.BoxGeometry(2 * (WHEEL - 0.04), 0.012, 0.012).rotateZ((turn * Math.PI) / 4), wheel, COLOURS.chrome);
+      add(new THREE.CylinderGeometry(0.035, 0.035, 0.1, 6).rotateX(Math.PI / 2), wheel, COLOURS.metal);
       return wheel;
     });
+    // The rear sprocket, and the chain from it to the chainring.
+    add(new THREE.CylinderGeometry(0.05, 0.05, 0.015, 8).rotateX(Math.PI / 2).translate(0, 0, 0.06), this.wheels[0], COLOURS.chrome);
+    for (const edge of [-1, 1]) {
+      add(tube(CRANK_AT[0], CRANK_AT[1] + edge * 0.1, REAR[0], REAR[1] + edge * 0.05, 0.06, 0.014), this.bike, COLOURS.metal);
+    }
     // The bike stays on the pavement, where he gets off it.
     this.bike.position.set(0, PAVEMENT.height, PAVEMENT.side);
     this.crank = this.bone(this.bike);
     this.crank.position.set(...CRANK_AT, 0);
-    add(new THREE.CylinderGeometry(0.09, 0.09, 0.02, 10).rotateX(Math.PI / 2).translate(0, 0, 0.06), this.crank, COLOURS.metal);
+    // The chainring: a bright ring round a dark five-armed spider.
+    add(new THREE.CylinderGeometry(0.1, 0.1, 0.012, 12).rotateX(Math.PI / 2).translate(0, 0, 0.06), this.crank, COLOURS.chrome);
+    add(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 5).rotateX(Math.PI / 2).translate(0, 0, 0.065), this.crank, COLOURS.metal);
     for (const side of [-1, 1]) {
       add(new THREE.BoxGeometry(CRANK, 0.025, 0.02).translate((side * CRANK) / 2, 0, side * 0.1), this.crank, COLOURS.metal);
       add(new THREE.BoxGeometry(0.06, 0.02, 0.1).translate(side * CRANK, 0, side * 0.15), this.crank, COLOURS.metal);
@@ -241,6 +276,9 @@ export class RiderRig {
     const stepping = Math.max(Math.sin(Math.PI * off), Math.sin(Math.PI * inside));
     if (off > 0) pose.mix(pose, walk(b, phase, stepping, this.to), off);
     this.apply(pose, time);
+    // The satchel comes with school (walking) and goes as the bike comes in.
+    const pack = smoothstep(0.55, 0.95, g) * (1 - smoothstep(2.2, 2.7, g));
+    this.pack.scale.set(b.chest, b.torso, b.shoulders).multiplyScalar(Math.max(pack, 0.001));
 
     // The bike grows in under him as he takes to it, and lies down and goes once he is off it.
     const gone = smoothstep(0.25, 0.6, state.handover);
