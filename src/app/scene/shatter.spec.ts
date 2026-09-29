@@ -3,7 +3,7 @@ import { CHAPTERS } from '../content/life';
 import { buildCar } from './cars';
 import { chapterAnchor } from './chapter-scene';
 import { build, stubCanvas } from './chapters/scene-contract';
-import { SHAKE_STOP, SHATTERED, Shatter, ShardPose, shakeAt, shardPose, tumbleAxis } from './shatter';
+import { PHONE_MAX_EDGE, SHAKE_STOP, SHATTERED, Shatter, ShardPose, shakeAt, shardPose, tumbleAxis } from './shatter';
 
 /** Everything built before the war, posed as it stands once built, plus the F30 on the road: what the engine breaks. */
 function world(): THREE.Object3D[] {
@@ -68,6 +68,13 @@ describe('the shatter', () => {
     expect(drawCalls).toBeLessThanOrEqual(70);
     expect(particles).toBeLessThanOrEqual(3_000);
     expect(shards).toBeGreaterThan(1_000);
+  });
+
+  it('breaks coarser on a phone: the same world in fewer triangles', () => {
+    const phone = new Shatter(world(), 2402, PHONE_MAX_EDGE).stats;
+    // About 45k on a desktop, 18.5k on a phone.
+    expect(phone.triangles).toBeLessThanOrEqual(20_000);
+    expect(phone.drawCalls).toBe(shatter.stats.drawCalls);
   });
 
   it('starts as the world it copies: at rest every shard sits where the built world is', () => {

@@ -70,7 +70,7 @@
   </ol>
   @if (webgl()) {
     <!-- The story list speaks for the card; only the phone toggle is left for assistive tech. -->
-    <article class="card" [class.card--open]="cardOpen()">
+    <article #card class="card" [class.card--open]="cardOpen()">
       <div class="card__head">
         <div aria-hidden="true">
           @if (text().placeholder) {

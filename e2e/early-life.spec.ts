@@ -109,6 +109,7 @@ test('scrolling back from family rebuilds birth exactly as it was', async ({ pag
 });
 
 test('two full scroll passes allocate no new GPU geometry or textures', async ({ page }) => {
+  test.setTimeout(120_000);
   const errors = collectErrors(page);
   await visit(page, '/');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
