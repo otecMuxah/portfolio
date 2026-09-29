@@ -10,6 +10,7 @@ import {
 import { enter, leave, smoothstep } from '../art/kit';
 import { PaletteKey } from '../art/palette';
 import { ChapterScene } from '../chapter-scene';
+import { CAMERA_OFFSET } from '../path';
 import { FaceText, WorkAtlas } from './atlas';
 import { Nameplate } from './nameplate';
 import { TechRing } from './tech-ring';
@@ -18,6 +19,8 @@ import { TechRing } from './tech-ring';
 export const STEP_GAP = 0.16;
 /** How much local progress a turn from one company to the next takes, centred between their moments. */
 export const TURN = 0.08;
+/** The local progress by which a chapter's layer has folded away after the camera leaves it. */
+export const FOLD = 1.3;
 
 const clamp01 = (x: number) => Math.min(Math.max(x, 0), 1);
 
@@ -75,31 +78,43 @@ function sharedAtlas(): WorkAtlas {
 }
 
 interface Placement {
-  /** The sign's foot and the height of its face's centre, in the chapter's anchor frame. */
-  sign: [x: number, z: number, height: number];
-  /** The ring's centre. */
-  ring: [x: number, y: number, z: number];
+  /**
+   * The sign, from the chapter camera: how far behind the anchor its foot stands, how far right of the camera's line of
+   * sight (negative: left), and the height of its face's centre.
+   */
+  sign: [behind: number, across: number, height: number];
+  /** The ring's centre, the same way. */
+  ring: [behind: number, across: number, height: number];
   /** Where the camera frames the chapter (local progress) and how far apart its company steps are. */
   schedule: [centre: number, gap: number];
 }
 
-/** Behind the subject, over the skyline, where the camera's frame is free on desktop and phone alike. */
+/** Level directions from the anchor: away from the camera road (straight behind the subject), and to screen right. */
+const BACK = new THREE.Vector3(-CAMERA_OFFSET.x, 0, -CAMERA_OFFSET.z).normalize();
+const RIGHT = new THREE.Vector3(-BACK.z, 0, BACK.x);
+
+/** A point `behind` the anchor from the chapter camera and `across` to the right of its line of sight, at `height`. */
+export function behindScene(behind: number, across: number, height: number): THREE.Vector3 {
+  return BACK.clone().multiplyScalar(behind).addScaledVector(RIGHT, across).setY(height);
+}
+
+/** The sign and ring stand this much larger than built, so they read the same from their place behind the scene. */
+export const BACKDROP_SCALE = 1.2;
+
+/**
+ * Behind the scene, past its 12 m plot from the chapter camera, whatever the set piece: high up, framing it from behind.
+ * The sign over the subject, a little right, toward the car, where a phone held upright looks; any further right and it
+ * stands in the next chapter's view, down the road. The ring up to the left.
+ */
 const PLACEMENT: Placement = {
-  sign: [-4.5, -4, 12],
-  ring: [-5, 7.5, 4.5],
+  sign: [13, 4, 15],
+  ring: [14.35, -6.5, 13.5],
   schedule: [0.5, STEP_GAP],
 };
-/** Where a chapter's own scene already stands in those places. */
+/** Where a chapter's camera frames it otherwise. */
 const PLACEMENTS: Partial<Record<ChapterId, Partial<Placement>>> = {
-  // Above the card, which is tallest here, as the camera moves on to the third company.
-  'kharkiv-career': { ring: [-5, 10, 4.5] },
-  // Clear of the north spire.
-  krakow: { sign: [-4.5, -4, 14] },
-  // The camera rides behind the car out of the war until the chapter's midpoint, and moves on soon after. The sign
-  // stands behind the forest and the ring over the gap between house and castle, clear of both.
-  ciklum: { sign: [-1.6, -8.8, 12], ring: [-3.5, 12, 0.2], schedule: [0.58, 0.12] },
-  // The sign right of the towers, under the planes; the ring left of the Messeturm.
-  iata: { sign: [4.6, -6.6, 10], ring: [-6.5, 11, 2.5] },
+  // The camera rides behind the car out of the war until the chapter's midpoint, and moves on soon after.
+  ciklum: { schedule: [0.58, 0.12] },
 };
 
 const WARM: PaletteKey[] = [
@@ -140,13 +155,18 @@ export function withWorkLayer(scene: ChapterScene, chapter: Chapter): ChapterSce
   const sign = new Nameplate(
     shared,
     steps.map((s) => shared.face(faceText(s))),
-    place.sign[2],
+    place.sign[2] / BACKDROP_SCALE,
     rebuild ? 'glass' : 'homeGlow',
   );
-  sign.object.position.set(place.sign[0], 0, place.sign[1]);
+  // The sign scales itself as it builds in, so it stands larger on a stand of its own.
+  const stand = new THREE.Group();
+  stand.position.copy(behindScene(place.sign[0], place.sign[1], 0));
+  stand.scale.setScalar(BACKDROP_SCALE);
+  stand.add(sign.object);
   const ring = new TechRing(shared, steps, rebuild ? COOL : WARM, rebuild ? 'glass' : 'homeGlow');
-  ring.object.position.set(...place.ring);
-  layer.add(sign.object, ring.object);
+  ring.object.position.copy(behindScene(...place.ring));
+  ring.object.scale.setScalar(BACKDROP_SCALE);
+  layer.add(stand, ring.object);
   scene.object.add(layer);
 
   const weights = new Array<number>(n).fill(0);
@@ -154,7 +174,9 @@ export function withWorkLayer(scene: ChapterScene, chapter: Chapter): ChapterSce
     object: scene.object,
     update(frame) {
       scene.update?.(frame);
-      const built = enter(frame.local);
+      // It folds away once the camera has moved on, before the next chapter frames its first company: from there, it
+      // would stand at the edge of that chapter's view.
+      const built = enter(frame.local) * (1 - smoothstep(1, FOLD, frame.local));
       const lit = smoothstep(0.85, 1, built) * (1 - 0.4 * leave(frame.local));
       const at = stepAt(frame.local, n, ...place.schedule);
       sign.update(at, built, lit);
