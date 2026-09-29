@@ -472,6 +472,57 @@ export function tower(radius: number, height: number, { sides = 8, roof = 'cone'
   return merge(parts);
 }
 
+export interface CurtainWallOptions {
+  /** Upright mullions on each side, between its corners. Default 3. */
+  perSide?: number;
+  /** Horizontal bars (floor lines), evenly up the wall, the top edge among them. Default 1. */
+  bands?: number;
+  /** Bar width (m). Default 0.06. */
+  bar?: number;
+  /** How far the bars stand proud of the wall (m). Default 0.04. */
+  depth?: number;
+  /** A post at every corner of the plan. Default true. */
+  corners?: boolean;
+  /** Flat strips facing out rather than bars: two triangles each, for a wall only seen from outside. */
+  flat?: boolean;
+  tint?: Tint;
+}
+
+/**
+ * Curtain-wall mullions round a prism of `height` standing on y = 0 whose plan is the polygon `plan` ([x, z] corners,
+ * either winding): upright bars at its corners and `perSide` along each side, and horizontal bars up it, all standing
+ * proud of its sides. For a glass tower, or a glass tower's storey.
+ */
+export function curtainWall(
+  plan: readonly [number, number][],
+  height: number,
+  { perSide = 3, bands = 1, bar = 0.06, depth = 0.04, corners = true, flat = false, tint = 'chalk' }: CurtainWallOptions = {},
+): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  const strip = (w: number, h: number, shading = 1) =>
+    flat ? paint(new THREE.PlaneGeometry(w, h).translate(0, h / 2, 0), tint, shading) : box(w, h, depth, tint, shading);
+  const cx = plan.reduce((s, p) => s + p[0], 0) / plan.length;
+  const cz = plan.reduce((s, p) => s + p[1], 0) / plan.length;
+  plan.forEach(([x0, z0], i) => {
+    const [x1, z1] = plan[(i + 1) % plan.length];
+    const length = Math.hypot(x1 - x0, z1 - z0);
+    // The side's outward normal (away from the plan's centre), and the turn that faces a part that way.
+    let nx = (z1 - z0) / length;
+    let nz = -(x1 - x0) / length;
+    if (nx * ((x0 + x1) / 2 - cx) + nz * ((z0 + z1) / 2 - cz) < 0) [nx, nz] = [-nx, -nz];
+    const turn = Math.atan2(nx, nz);
+    const out = flat ? depth : depth / 2;
+    const at = (t: number): [number, number] => [x0 + (x1 - x0) * t + nx * out, z0 + (z1 - z0) * t + nz * out];
+    for (let k = corners ? 0 : 1; k <= perSide; k++) {
+      const [x, z] = at(k / (perSide + 1));
+      parts.push(place(strip(bar, height), x, 0, z, turn));
+    }
+    const [mx, mz] = at(0.5);
+    for (let b = 1; b <= bands; b++) parts.push(place(strip(length, bar, 0.94), mx, (height * b) / bands - bar, mz, turn));
+  });
+  return merge(parts);
+}
+
 /** A round column `height` tall (base to capital top) of `radius`: a square base block, an 8-sided shaft and a capital slab. */
 export function column(height: number, radius = 0.1, { tint = 'chalk' as Tint, capitalTint = tint as Tint, sides = 8 } = {}): THREE.BufferGeometry {
   const foot = radius * 0.9;
