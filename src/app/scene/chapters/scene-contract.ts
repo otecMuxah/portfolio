@@ -131,6 +131,9 @@ export function sceneContract(id: ChapterId): void {
           expect(box.intersectsBox(CAR), `${id} car at local ${local}`).toBe(false);
           expect(box.intersectsBox(ROAD_SIDE), `${id} road side at local ${local}`).toBe(false);
         }
+        // The work layer stands behind the plot, on a radius of its own (work-layer.spec.ts).
+        const work = scene.getObjectByName('work-layer');
+        if (work) work.visible = false;
         for (const v of vertices(scene)) {
           expect(v.y, `${id} at local ${local}`).toBeLessThanOrEqual(22);
           expect(Math.hypot(v.x, v.z), `${id} at local ${local}`).toBeLessThanOrEqual(12);
