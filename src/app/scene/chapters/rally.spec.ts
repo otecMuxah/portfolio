@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CHAPTERS } from '../../content/life';
-import { BUDGET, build, built, stats, stubCanvas, vertices } from './scene-contract';
+import { BUDGET, build, built, stats, stubCanvas, uniqueVertices, vertices } from './scene-contract';
 
 /** Road surface and dust live on the car's road by design; everything else is scenery. */
 const onRoad = (obj: THREE.Object3D) => obj.name === 'stage-road' || obj.name === 'dust' || obj.parent?.name === 'stage-road';
@@ -39,11 +39,15 @@ describe('rally scene', () => {
   });
 
   it('keeps its scenery inside the 12 m plot and out of the car lane, before, during and after the camera', () => {
+    // One build, posed at each local in turn as the scroll would (its state is the scroll's alone, below).
+    const scene = build('rally');
     for (const local of [-0.5, 0, 0.5, 1, 2]) {
-      const object = built('rally', local);
+      scene.update?.({ progress: 0, local, time: 3 });
+      const object = scene.object;
+      object.updateMatrixWorld(true);
       const lane = object.getObjectByName('stage-road')!.parent!;
       for (const mesh of scenery(object)) {
-        for (const v of vertices(mesh)) {
+        for (const v of uniqueVertices(mesh)) {
           expect(v.y, `height at local ${local}`).toBeLessThanOrEqual(22);
           expect(Math.hypot(v.x, v.z), `plot at local ${local}`).toBeLessThanOrEqual(12);
           // Lane frame z runs across the road. Nothing stands within 3 m of the car's line (the car is

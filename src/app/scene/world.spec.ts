@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { chapterSpans } from '../journey/journey';
 import { chapterAnchor } from './chapter-scene';
-import { stats, stubCanvas } from './chapters/scene-contract';
+import { nearestOn, stats, stubCanvas, uniquePoints } from './chapters/scene-contract';
 import { DRIVE } from './escape';
 import { cameraPath, carFrom } from './path';
 import { World } from './world';
@@ -42,14 +42,12 @@ const line = Array.from({ length: 3000 }, (_, k) => {
   return { at, side: new THREE.Vector3().crossVectors(heading, new THREE.Vector3(0, 1, 0)).normalize() };
 });
 
+const nearest = nearestOn(line, (l) => l.at);
+
 /** How far `p` stands to the right of the car's line (negative: the scenes' side). */
 function across(p: THREE.Vector3): number {
-  let best = line[0];
-  let d = Infinity;
-  for (const l of line) {
-    const e = (l.at.x - p.x) ** 2 + (l.at.z - p.z) ** 2;
-    if (e < d) [d, best] = [e, l];
-  }
+  // The first of the nearest, as a scan keeping the earlier unless the later is strictly nearer finds it.
+  const best = nearest(p.x, p.z, (l) => (l.at.x - p.x) ** 2 + (l.at.z - p.z) ** 2);
   return (p.x - best.at.x) * best.side.x + (p.z - best.at.z) * best.side.z;
 }
 
@@ -96,7 +94,7 @@ describe('the world', () => {
       expect(props.length).toBeGreaterThan(10);
       const bad: string[] = [];
       for (const mesh of props)
-        for (const p of points(mesh)) {
+        for (const p of uniquePoints(points(mesh))) {
           const where = `${phone ? 'phone ' : ''}${mesh.name} ${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}`;
           for (const a of anchors) {
             const x = p.x - a.x;
@@ -118,17 +116,18 @@ describe('the world', () => {
   });
 
   it('holds its budget, lighter on a phone', () => {
-    const desktop = stats(world().object);
+    const built = world();
+    const desktop = stats(built.object);
     const phone = stats(world(true).object);
     expect(desktop.drawCalls).toBeLessThanOrEqual(26);
     expect(desktop.triangles).toBeLessThan(32_000);
     expect(phone.triangles).toBeLessThan(desktop.triangles / 2);
     expect(desktop.lights).toBe(0);
+    // The one desktop world, posed at each chapter in turn as the scroll would.
     for (const i of [1, 9, 13]) {
-      const w = world();
-      w.update(i / 13, cameraAt(i), 0, new THREE.Color(), i < WAR.index);
+      built.update(i / 13, cameraAt(i), 0, new THREE.Color(), i < WAR.index);
       let drawn = 0;
-      w.object.traverseVisible((o) => o instanceof THREE.Mesh && drawn++);
+      built.object.traverseVisible((o) => o instanceof THREE.Mesh && drawn++);
       expect(drawn, spans[i].chapter.id).toBeLessThanOrEqual(14);
     }
   });

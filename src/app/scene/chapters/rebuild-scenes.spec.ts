@@ -1,15 +1,28 @@
 import * as THREE from 'three';
 import { CHAPTERS, ChapterId } from '../../content/life';
+import { ChapterScene } from '../chapter-scene';
 import { build, built, sceneContract, stubCanvas } from './scene-contract';
 
 const REBUILD: ChapterId[] = ['ciklum', 'iata'];
 
-/** Instances standing (non-zero scale) across a scene's instanced meshes. */
+/** Instances standing (non-zero scale) across a fresh build's instanced meshes. */
 function standing(id: ChapterId, local: number): number {
+  return standingIn(built(id, local));
+}
+
+/** Poses `scene` at `local`, as `built` does a fresh one, and returns its object. */
+function pose(scene: ChapterScene, local: number): THREE.Object3D {
+  scene.update?.({ progress: 0, local, time: 3 });
+  scene.object.updateMatrixWorld(true);
+  return scene.object;
+}
+
+/** Instances standing (non-zero scale) across an object's instanced meshes. */
+function standingIn(object: THREE.Object3D): number {
   let n = 0;
   const m = new THREE.Matrix4();
   const scale = new THREE.Vector3();
-  built(id, local).traverseVisible((o) => {
+  object.traverseVisible((o) => {
     if (!(o instanceof THREE.InstancedMesh)) return;
     for (let i = 0; i < o.count; i++) {
       o.getMatrixAt(i, m);
@@ -38,21 +51,24 @@ describe('rebuild scenes', () => {
   });
 
   it('Aschaffenburg: the castle goes up piece by piece as the scroll goes on, and stands by the time the camera arrives', () => {
-    expect(standing('ciklum', 0)).toBe(0);
+    // One build, posed at each local in turn as the scroll would (its state is the scroll's alone: the contract below).
+    const scene = build('ciklum');
+    expect(standingIn(pose(scene, 0))).toBe(0);
     let last = 0;
     for (const local of [0.2, 0.3, 0.4, 0.5]) {
-      const n = standing('ciklum', local);
+      const n = standingIn(pose(scene, local));
       expect(n).toBeGreaterThan(last);
       last = n;
     }
-    for (const local of [0.6, 0.9, 2]) expect(standing('ciklum', local)).toBe(last);
+    for (const local of [0.6, 0.9, 2]) expect(standingIn(pose(scene, local))).toBe(last);
   });
 
   it("Aschaffenburg: the house's windows light one by one with the scroll, and scrolling back puts them out again", () => {
-    expect(litWindows(built('ciklum', 0))).toBe(0);
+    const lit = build('ciklum');
+    expect(litWindows(pose(lit, 0))).toBe(0);
     let last = 0;
     for (const local of [0.35, 0.45, 0.55, 0.62, 0.7]) {
-      const n = litWindows(built('ciklum', local));
+      const n = litWindows(pose(lit, local));
       expect(n, `lit at local ${local}`).toBeGreaterThan(last);
       last = n;
     }
@@ -75,8 +91,9 @@ describe('rebuild scenes', () => {
       });
       return out;
     };
-    expect(planes(1)).toHaveLength(3);
-    planes(1).forEach((x, i) => expect(x).toBeCloseTo(planes(40)[i], 5));
+    const [early, late] = [planes(1), planes(40)];
+    expect(early).toHaveLength(3);
+    early.forEach((x, i) => expect(x).toBeCloseTo(late[i], 5));
   });
 
   REBUILD.forEach(sceneContract);
