@@ -40,7 +40,7 @@ export const EN: Record<ChapterId, ChapterText> = {
     label: 'First code',
     place: 'Ukraine',
     title: 'Self-taught, first job',
-    body: 'Taught himself to code and landed a first job as a front-end developer at Webholder.',
+    body: 'He taught himself to code, and in 2012 Webholder gave him his first job as a front-end developer.',
     roles: [
       {
         company: 'Webholder',
@@ -56,7 +56,7 @@ export const EN: Record<ChapterId, ChapterText> = {
     label: 'Kharkiv career',
     place: 'Kharkiv',
     title: 'The Kharkiv career years',
-    body: 'Growing as an engineer across three Kharkiv companies.',
+    body: 'Six years in Kharkiv and three companies, each one teaching him something new.',
     roles: [
       {
         company: 'Raccoon Gang',
@@ -92,7 +92,7 @@ export const EN: Record<ChapterId, ChapterText> = {
     label: 'Kraków',
     place: 'Kraków',
     title: 'Kraków: leading the front end',
-    body: 'In 2021 he moved to Kraków, leading the front end at Corporate Finance Institute, headquartered in Warsaw.',
+    body: 'In 2021 he moved to Kraków. From there he led the front end at Corporate Finance Institute, building it up with a team of five.',
     roles: [
       {
         company: 'Corporate Finance Institute',
@@ -140,10 +140,10 @@ export const EN: Record<ChapterId, ChapterText> = {
     body: '4 a.m. Explosions. 5 a.m. Family in the car. West. Then Europe. The life he built in Kharkiv, left behind.',
   },
   ciklum: {
-    label: 'Ciklum',
+    label: 'Aschaffenburg',
     place: 'Aschaffenburg, Bavaria',
-    title: 'Ciklum: starting from scratch',
-    body: 'Hired by Ciklum on 12 Feb 2022, twelve days before the war, and kept the job through the escape. Rebuilt life in Aschaffenburg. A house by the forest, the castle over the Main. Lead Frontend Developer on Redstor (2022–2023), then Senior Frontend Developer on Deloitte (2023–2024).',
+    title: 'Aschaffenburg: starting over',
+    body: 'Ciklum hired him on 12 February 2022, twelve days before the war, and kept him on through the escape. He started over in Aschaffenburg, in a house by the forest with the castle above the Main. There he led the front end on Redstor, then moved to the Deloitte project as a senior front-end developer.',
     roles: [
       {
         company: 'Redstor',
@@ -173,7 +173,7 @@ export const EN: Record<ChapterId, ChapterText> = {
     label: 'IATA',
     place: 'Aschaffenburg, then Frankfurt',
     title: 'IATA',
-    body: 'Senior Full-Stack Developer (contract), leading a team of 6 developers within a 50-person engineering organisation. AI-agent delivery across AMSS, ARM Index, ATMPM and ASPAC.',
+    body: 'Since 2024 he has worked with IATA, the global airline association, leading a team of six developers. He changed how the team works: AI agents now take a ticket all the way to a pull request, and people do the reviewing.',
     roles: [
       {
         company: 'International Air Transport Association',

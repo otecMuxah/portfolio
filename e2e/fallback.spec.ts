@@ -14,7 +14,7 @@ const TITLES = [
   'Kraków: leading the front end',
   'Back to Kharkiv',
   '24.02.2022',
-  'Ciklum: starting from scratch',
+  'Aschaffenburg: starting over',
   'IATA',
 ];
 
