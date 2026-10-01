@@ -182,6 +182,8 @@ export class TechRing {
     }
     radius = total > 0 ? radius / total : this.radii[0];
     this.object.visible = shown > 0;
+    // Hidden, it keeps its last pose: the next frame it shows rewrites every part.
+    if (!this.object.visible) return;
     const hoop = Math.max(radius * smoothstep(0, 0.4, shown), 1e-3);
     this.place(this.hoop, this.centre.set(0, 0, 0), this.lean, this.size.set(hoop, hoop, hoop));
 
