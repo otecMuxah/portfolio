@@ -15,7 +15,7 @@ const TITLES = [
   'Back to Kharkiv',
   '24.02.2022',
   'Aschaffenburg: starting over',
-  'IATA',
+  'Frankfurt',
 ];
 
 const story = (page: Page) => page.getByRole('list', { name: 'Life story' });
