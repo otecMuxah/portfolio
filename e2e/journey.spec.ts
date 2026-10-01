@@ -65,7 +65,7 @@ test('a chapter deep link lands on that chapter', async ({ page }) => {
   await visit(page, '/#ciklum');
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'ciklum');
   await expect(page.locator(root)).toHaveAttribute('data-car', 'f30');
-  await expect(page.locator('.card__title')).toHaveText('Ciklum: starting from scratch');
+  await expect(page.locator('.card__title')).toHaveText('Aschaffenburg: starting over');
 
   expect(errors).toEqual([]);
 });
