@@ -66,6 +66,72 @@ export function vertices(object: THREE.Object3D): THREE.Vector3[] {
   return out;
 }
 
+/** `items` without repeats, told apart by `key`, in first-seen order. */
+function distinct<T>(items: T[], key: (item: T) => string): T[] {
+  const seen = new Map<string, T>();
+  for (const item of items) {
+    const k = key(item);
+    if (!seen.has(k)) seen.set(k, item);
+  }
+  return [...seen.values()];
+}
+
+/** Each point once: merged, non-indexed geometry repeats a vertex in every triangle that meets it. */
+export const uniquePoints = (points: THREE.Vector3[]): THREE.Vector3[] => distinct(points, (v) => `${v.x},${v.y},${v.z}`);
+
+/** `vertices()`, each world-space point once: for checks of where points lie, not of how many there are. */
+export const uniqueVertices = (object: THREE.Object3D): THREE.Vector3[] => uniquePoints(vertices(object));
+
+/** Each box once: a point per particle or instance vertex repeats as the vertices do. */
+export const uniqueBoxes = (boxes: THREE.Box3[]): THREE.Box3[] =>
+  distinct(boxes, (b) => `${b.min.x},${b.min.y},${b.min.z},${b.max.x},${b.max.y},${b.max.z}`);
+
+/**
+ * The nearest of `items` to a point on the ground, exactly as a scan of them all finds it, without scanning them all:
+ * they are bucketed by the 4 m square their (x, z) lies in, and searched outwards ring by ring until no farther
+ * square can hold anything nearer. `distance` must be a squared distance no less than the squared distance across the
+ * ground; on a tie the first item in `items` wins, or the last when `last`, as a scan keeping the earlier unless the
+ * later is strictly nearer (or the reverse) would.
+ */
+export function nearestOn<T>(items: readonly T[], ground: (item: T) => { x: number; z: number }) {
+  const SIZE = 4;
+  const cells = new Map<number, Map<number, number[]>>();
+  items.forEach((item, k) => {
+    const { x, z } = ground(item);
+    const i = Math.floor(x / SIZE);
+    const j = Math.floor(z / SIZE);
+    if (!cells.has(i)) cells.set(i, new Map());
+    const column = cells.get(i)!;
+    if (column.has(j)) column.get(j)!.push(k);
+    else column.set(j, [k]);
+  });
+  return (x: number, z: number, distance: (item: T) => number, last = false): T => {
+    const ci = Math.floor(x / SIZE);
+    const cj = Math.floor(z / SIZE);
+    let best = -1;
+    let d = Infinity;
+    let seen = 0;
+    const visit = (i: number, j: number) => {
+      for (const k of cells.get(i)?.get(j) ?? []) {
+        seen++;
+        const e = distance(items[k]);
+        if (e < d || (e === d && (last ? k > best : k < best))) [d, best] = [e, k];
+      }
+    };
+    for (let r = 0; seen < items.length; r++) {
+      // The ring of squares r out from the point's own.
+      if (r === 0) visit(ci, cj);
+      else {
+        for (let i = ci - r; i <= ci + r; i++) visit(i, cj - r), visit(i, cj + r);
+        for (let j = cj - r + 1; j < cj + r; j++) visit(ci - r, j), visit(ci + r, j);
+      }
+      // Everything not yet seen lies r + 1 or more squares out, so more than r squares' width away.
+      if (best >= 0 && Math.sqrt(d) + 1e-6 < r * SIZE) break;
+    }
+    return items[best];
+  };
+}
+
 /** World-space boxes of what could stand in the car's way: a box per mesh or line, a point per particle or instance vertex. */
 export function solids(object: THREE.Object3D): THREE.Box3[] {
   const boxes: THREE.Box3[] = [];
@@ -136,19 +202,25 @@ export function sceneContract(id: ChapterId): void {
     });
 
     it('keeps clear of the car on the road and the road side and stays inside its 12 m plot, before, during and after the camera', () => {
+      // One build, posed at each local in turn as the scroll would (the state is the scroll's alone, below).
+      const chapter = build(id);
       for (const local of [-0.5, 0, 0.5, 1, 2]) {
-        const scene = built(id, local);
-        for (const box of solids(scene)) {
+        chapter.update?.({ progress: 0, local, time: 3 });
+        const scene = chapter.object;
+        scene.updateMatrixWorld(true);
+        for (const box of uniqueBoxes(solids(scene))) {
           expect(box.intersectsBox(CAR), `${id} car at local ${local}`).toBe(false);
           expect(box.intersectsBox(ROAD_SIDE), `${id} road side at local ${local}`).toBe(false);
         }
         // The work layer stands behind the plot, on a radius of its own (work-layer.spec.ts).
         const work = scene.getObjectByName('work-layer');
+        const shown = work?.visible;
         if (work) work.visible = false;
-        for (const v of vertices(scene)) {
+        for (const v of uniqueVertices(scene)) {
           expect(v.y, `${id} at local ${local}`).toBeLessThanOrEqual(22);
           expect(Math.hypot(v.x, v.z), `${id} at local ${local}`).toBeLessThanOrEqual(12);
         }
+        if (work) work.visible = shown!;
       }
     });
 
