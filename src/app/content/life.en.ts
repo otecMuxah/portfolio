@@ -170,9 +170,9 @@ export const EN: Record<ChapterId, ChapterText> = {
     ],
   },
   iata: {
-    label: 'IATA',
+    label: 'Frankfurt',
     place: 'Aschaffenburg, then Frankfurt',
-    title: 'IATA',
+    title: 'Frankfurt',
     body: 'Since 2024 he has worked with IATA, the global airline association, leading a team of six developers. He changed how the team works: AI agents now take a ticket all the way to a pull request, and people do the reviewing.',
     roles: [
       {

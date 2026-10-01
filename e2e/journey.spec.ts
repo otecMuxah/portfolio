@@ -15,14 +15,14 @@ test('scrolling walks the visitor through each chapter in order', async ({ page 
   await expect(page.locator(root)).toHaveAttribute('data-car', 'forester');
 
   await scrollToChapter(page, 'iata');
-  await expect(page.locator('.card__title')).toHaveText('IATA');
+  await expect(page.locator('.card__title')).toHaveText('Frankfurt');
   await expect(page.locator('.card__meta')).toHaveText('2024 – now · Aschaffenburg, then Frankfurt');
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'rebuild');
 
   await scrollJourney(page, 1);
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'iata');
   await expect(page.locator(root)).toHaveAttribute('data-phase', 'rebuild');
-  await expect(page.locator('.card__title')).toHaveText('IATA');
+  await expect(page.locator('.card__title')).toHaveText('Frankfurt');
 
   await scrollJourney(page, 0);
   await expect(page.locator(root)).toHaveAttribute('data-chapter', 'birth');
