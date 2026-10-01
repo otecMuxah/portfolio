@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { CHAPTERS, CHAPTER_TEXT, ChapterId, Domain } from '../../content/life';
 import { ROLES } from '../../content/cv';
 import { chapterSpans } from '../../journey/journey';
-import { chapterAnchor } from '../chapter-scene';
-import { build, built, solids, stubCanvas, vertices } from '../chapters/scene-contract';
+import { ChapterScene, chapterAnchor } from '../chapter-scene';
+import { build, built, solids, stubCanvas, uniqueVertices, vertices } from '../chapters/scene-contract';
 import { LIGHT } from '../chapters/war';
 import { BENDS, DRIVE, EscapeRoute } from '../escape';
 import { CAMERA_OFFSET, cameraPath, carFrom, pathT, roadStops } from '../path';
@@ -161,8 +161,8 @@ describe('work layer in the scene', () => {
 
   const layer = (object: THREE.Object3D) => object.getObjectByName('work-layer');
 
-  it('stands in every career chapter and no other', () => {
-    for (const c of CHAPTERS) expect(!!layer(build(c.id).object), c.id).toBe(CAREER.includes(c.id));
+  describe('stands in every career chapter and no other', () => {
+    for (const c of CHAPTERS) it(c.id, () => expect(!!layer(build(c.id).object), c.id).toBe(CAREER.includes(c.id)));
   });
 
   it('sits in the anchor frame, however the chapter turns its own scene', () => {
@@ -202,7 +202,12 @@ describe('work layer in the scene', () => {
   /** The work layer's own plot: it stands behind the chapter's 12 m one, so it gets a wider radius. */
   const WORK_PLOT = 20;
   const LOCALS = [-0.5, 0, 0.5, 1, 2];
-  const layerVertices = (id: ChapterId, local: number) => vertices(layer(built(id, local))!);
+  /** The layer's vertices with its chapter's one build posed at `local`, as the scroll would pose it (its state is the scroll's alone). */
+  const layerVertices = (scene: ChapterScene, local: number) => {
+    scene.update?.({ progress: 0, local, time: 3 });
+    scene.object.updateMatrixWorld(true);
+    return uniqueVertices(layer(scene.object)!);
+  };
 
   it('turns camera terms into the anchor frame: behind is away from the camera road, across is to screen right', () => {
     const back = behindScene(10, 0, 3);
@@ -217,15 +222,17 @@ describe('work layer in the scene', () => {
 
   it(`stands behind the set piece from the chapter camera, past its 12 m plot and inside a ${WORK_PLOT} m one, under 22 m`, () => {
     const away = CAMERA_OFFSET.clone().setY(0).normalize().negate();
-    for (const id of CAREER)
+    for (const id of CAREER) {
+      const scene = build(id);
       for (const local of LOCALS)
-        for (const v of layerVertices(id, local)) {
+        for (const v of layerVertices(scene, local)) {
           const flat = Math.hypot(v.x, v.z);
           expect(flat, `${id} at ${local}`).toBeLessThanOrEqual(WORK_PLOT);
           expect(flat, `${id} at ${local}`).toBeGreaterThan(12);
           expect(v.clone().setY(0).dot(away), `${id} behind at ${local}`).toBeGreaterThan(6);
           expect(v.y, `${id} at ${local}`).toBeLessThanOrEqual(22);
         }
+    }
   });
 
   it("keeps clear of the road, the pavement, the escape road and the neighbouring chapters' plots", () => {
@@ -250,17 +257,18 @@ describe('work layer in the scene', () => {
     road.object.updateMatrixWorld(true);
     escape.object.updateMatrixWorld(true);
     // Paving vertices lie at most ~2 m from any point of their surface, so 4 m from every one keeps 2 m clear.
-    const town = vertices(road.object);
-    const out = vertices(escape.object.children[0]);
+    const town = uniqueVertices(road.object);
+    const out = uniqueVertices(escape.object.children[0]);
     for (const id of CAREER) {
       const index = CHAPTERS.findIndex((c) => c.id === id);
       // The escape road only shows once the world built before the war has broken (escape.ts, scene-engine.ts).
       const paving = CHAPTERS[index].phase === 'build' ? town : [...town, ...out];
       const near = paving.filter((p) => Math.hypot(p.x - anchors[index].x, p.z - anchors[index].z) < WORK_PLOT + 6);
+      const scene = build(id);
       for (const local of LOCALS) {
         let toRoad = Infinity;
         let toNeighbour = Infinity;
-        for (const v of layerVertices(id, local)) {
+        for (const v of layerVertices(scene, local)) {
           const at = v.add(anchors[index]);
           for (const p of near) toRoad = Math.min(toRoad, Math.hypot(at.x - p.x, at.z - p.z));
           anchors.forEach((a, j) => {
@@ -339,10 +347,11 @@ describe('work layer in the scene', () => {
     for (const id of CAREER) {
       const index = CHAPTERS.findIndex((c) => c.id === id);
       const { start, end } = spans[index];
+      const scene = build(id);
       for (const view of views) {
         if (view.index === index) continue;
         // Posed as it stands at that moment.
-        const world = layerVertices(id, (view.progress - start) / (end - start)).map((v) => v.add(anchors[index]));
+        const world = layerVertices(scene, (view.progress - start) / (end - start)).map((v) => v.add(anchors[index]));
         for (const { aspect, camera, look } of framings(view.camera)) {
           const eye = new THREE.PerspectiveCamera(55, aspect, 0.1, 500);
           eye.position.copy(camera);

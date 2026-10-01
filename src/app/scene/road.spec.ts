@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CHAPTERS } from '../content/life';
 import { chapterSpans, riderAt } from '../journey/journey';
 import { chapterAnchor } from './chapter-scene';
-import { built, stats, stubCanvas, vertices } from './chapters/scene-contract';
+import { build, nearestOn, stats, stubCanvas, uniqueVertices, vertices } from './chapters/scene-contract';
 import { stageAlong } from './chapters/rally';
 import { LIGHT } from './chapters/war';
 import { BENDS, DRIVE, EscapeRoute, driveAt, driveProgress } from './escape';
@@ -152,7 +152,7 @@ describe('the road', () => {
     }
   });
 
-  it('keeps its asphalt clear of everything the chapters stand on the ground', () => {
+  describe('keeps its asphalt clear of everything the chapters stand on the ground', () => {
     // The car's line, finely sampled, with its right: how far across it each point of a scene lies.
     const line = Array.from({ length: 4001 }, (_, k) => {
       const position = carFrom(path.getPoint(k / 4000), new THREE.Vector3());
@@ -162,16 +162,24 @@ describe('the road', () => {
     CHAPTERS.forEach((chapter, i) => {
       // The rally lays its own gravel stage in place of the road; the war stands where the car has no road.
       if (chapter.scene === 'rally' || chapter.scene === 'war') return;
-      const near = line.filter(({ position }) => Math.abs(position.z - anchors[i].z) < 30);
-      for (const local of [0, 0.5, 1]) {
-        for (const v of vertices(built(chapter.id, local))) {
-          if (v.y > 0.3) continue;
-          v.add(anchors[i]);
-          const closest = near.reduce((a, b) => (a.position.distanceToSquared(v) < b.position.distanceToSquared(v) ? a : b));
-          const across = v.clone().sub(closest.position).dot(closest.side);
-          expect(across < CARRIAGEWAY.left || across > CARRIAGEWAY.right, `${chapter.id} at local ${local}: ${across.toFixed(2)} m across`).toBe(true);
+      it(chapter.id, () => {
+        const near = line.filter(({ position }) => Math.abs(position.z - anchors[i].z) < 30);
+        const nearest = nearestOn(near, (l) => l.position);
+        // One build, posed at each local in turn as the scroll would (scene-contract.ts: its state is the scroll's alone).
+        const scene = build(chapter.id);
+        for (const local of [0, 0.5, 1]) {
+          scene.update?.({ progress: 0, local, time: 3 });
+          scene.object.updateMatrixWorld(true);
+          for (const v of uniqueVertices(scene.object)) {
+            if (v.y > 0.3) continue;
+            v.add(anchors[i]);
+            // The last of the nearest, as a reduce keeping the earlier only when strictly nearer finds it.
+            const closest = nearest(v.x, v.z, (l) => l.position.distanceToSquared(v), true);
+            const across = v.clone().sub(closest.position).dot(closest.side);
+            expect(across < CARRIAGEWAY.left || across > CARRIAGEWAY.right, `${chapter.id} at local ${local}: ${across.toFixed(2)} m across`).toBe(true);
+          }
         }
-      }
+      });
     });
   });
 
